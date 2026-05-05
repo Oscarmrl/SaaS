@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg-base:       #F8F9FA;
+  --color-bg-surface:    #FFFFFF;
+  --color-bg-sidebar:    #0A0A0A;
+  --color-bg-featured:   #111111;
+  --color-bg-muted:      #F1F3F5;
+
+  --color-text-primary:  #0A0A0A;
+  --color-text-secondary:#6B7280;
+  --color-text-muted:    #9CA3AF;
+  --color-text-inverse:  #FFFFFF;
+
+  --color-accent:        #7C3AED;
+  --color-accent-light:  #EDE9FE;
+  --color-accent-hover:  #6D28D9;
+
+  --color-border:        #E5E7EB;
+  --color-border-strong: #D1D5DB;
+
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  16px;
+  --radius-xl:  24px;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html, body {
+  height: 100%;
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer components {
+  .card {
+    @apply bg-white border border-[#E5E7EB] rounded-[12px] p-6 shadow-card
+           transition-all duration-150 ease-in-out;
+  }
+  .card-hover {
+    @apply card hover:shadow-card-hover hover:-translate-y-0.5;
+  }
+  .card-featured {
+    @apply bg-[#111111] text-white rounded-[16px] p-7;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           bg-[#0A0A0A] text-white text-sm font-semibold rounded-[8px]
+           transition-all duration-150 hover:bg-[#111111] hover:shadow-card
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           bg-[#7C3AED] text-white text-sm font-semibold rounded-[8px]
+           transition-all duration-150 hover:bg-[#6D28D9] hover:shadow-card
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           bg-transparent border border-[#D1D5DB] text-[#0A0A0A] text-sm font-semibold rounded-[8px]
+           transition-all duration-150 hover:bg-[#F1F3F5]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .pill {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
+           bg-[#F1F3F5] text-[#374151];
+  }
+  .pill-accent {
+    @apply pill bg-[#EDE9FE] text-[#7C3AED];
+  }
+  .input {
+    @apply w-full px-4 py-2.5 bg-white border border-[#E5E7EB] rounded-[8px]
+           text-sm text-[#0A0A0A] placeholder-[#9CA3AF]
+           focus:outline-none focus:ring-2 focus:ring-[#7C3AED] focus:border-transparent
+           transition-all duration-150;
+  }
+  .skeleton {
+    @apply bg-gradient-to-r from-[#F1F3F5] via-[#E5E7EB] to-[#F1F3F5]
+           bg-[length:200%_100%] animate-shimmer rounded-[8px];
+  }
+}

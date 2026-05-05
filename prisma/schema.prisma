@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── User ────────────────────────────────────────────────────────────────────
+
+model User {
+  id         String   @id @default(uuid())
+  supabaseId String   @unique @map("supabase_id")
+  email      String   @unique
+  name       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  creditAccount      CreditAccount?
+  creditTransactions CreditTransaction[]
+  payments           Payment[]
+  brands             Brand[]
+  generationJobs     GenerationJob[]
+  generatedAssets    GeneratedAsset[]
+
+  @@map("users")
+}
+
+// ─── Credits ─────────────────────────────────────────────────────────────────
+
+model CreditAccount {
+  id              String @id @default(uuid())
+  userId          String @unique @map("user_id")
+  balance         Int    @default(0)
+  lifetimeCredits Int    @default(0) @map("lifetime_credits")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("credit_accounts")
+}
+
+model CreditTransaction {
+  id            String          @id @default(uuid())
+  userId        String          @map("user_id")
+  amount        Int
+  type          TransactionType
+  description   String
+  paypalOrderId String?         @map("paypal_order_id")
+  assetId       String?         @map("asset_id")
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("credit_transactions")
+}
+
+enum TransactionType {
+  PURCHASE
+  SPEND
+  REFUND
+  BONUS
+}
+
+// ─── Payments ────────────────────────────────────────────────────────────────
+
+model Payment {
+  id               String        @id @default(uuid())
+  userId           String        @map("user_id")
+  paypalOrderId    String        @unique @map("paypal_order_id")
+  paypalPayerId    String?       @map("paypal_payer_id")
+  amountUsd        Decimal       @db.Decimal(10, 2) @map("amount_usd")
+  creditsPurchased Int           @map("credits_purchased")
+  status           PaymentStatus @default(PENDING)
+  pack             CreditPack
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum CreditPack {
+  SEED
+  BUSINESS
+  PRO
+  AGENCY
+}
+
+// ─── Brand ───────────────────────────────────────────────────────────────────
+
+model Brand {
+  id                 String   @id @default(uuid())
+  userId             String   @map("user_id")
+  name               String
+  description        String?
+  industry           String?
+  toneOfVoice        String?  @map("tone_of_voice")
+  targetAudience     String?  @map("target_audience")
+  primaryColor       String?  @map("primary_color")
+  secondaryColor     String?  @map("secondary_color")
+  fonts              String?
+  logoUrl            String?  @map("logo_url")
+  referenceImageUrls String[] @map("reference_image_urls")
+  extractedStyle     Json?    @map("extracted_style")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generationJobs  GenerationJob[]
+  generatedAssets GeneratedAsset[]
+
+  @@map("brands")
+}
+
+// ─── Generation ──────────────────────────────────────────────────────────────
+
+model GenerationJob {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  brandId         String    @map("brand_id")
+  type            AssetType
+  status          JobStatus @default(PENDING)
+  prompt          String
+  userPrompt      String    @map("user_prompt")
+  creditsRequired Int       @map("credits_required")
+  creditsCharged  Int?      @map("credits_charged")
+  provider        String
+  metadata        Json?
+  errorMessage    String?   @map("error_message")
+  bullJobId       String?   @map("bull_job_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand          Brand           @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  generatedAsset GeneratedAsset?
+
+  @@map("generation_jobs")
+}
+
+enum AssetType {
+  IMAGE
+  BANNER
+  VIDEO_15S
+  VIDEO_30S
+  CAPTION
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model GeneratedAsset {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  brandId         String    @map("brand_id")
+  jobId           String    @unique @map("job_id")
+  type            AssetType
+  url             String
+  thumbnailUrl    String?   @map("thumbnail_url")
+  width           Int?
+  height          Int?
+  durationSeconds Int?      @map("duration_seconds")
+  platform        String?
+  creditsCost     Int       @map("credits_cost")
+  provider        String
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand Brand         @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  job   GenerationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("generated_assets")
+}
