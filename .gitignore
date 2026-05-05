@@ -13,6 +13,5 @@ Thumbs.db
 coverage/
 prisma/migrations/
 *.md
-prisma/
 Referencias/
 railway.toml

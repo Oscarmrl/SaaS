@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+
+# Secrets — 
+.env
+.env.*
+apps/api/.env
+apps/api/.env.*
+apps/worker/.env
+apps/worker/.env.*
+apps/web/.env.local
+apps/web/.env.*
+
+# Dependencias 
+node_modules
+**/node_modules
+
+# Outputs de build 
+dist
+**/dist
+.next
+**/.next
+build
+**/build
+packages/shared/dist
+
+# Turbo y cobertura
+.turbo
+coverage
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Archivos de orquestación 
+docker-compose.yml
+
+# Imágenes de referencia de diseño
+Referencias/
+
+# Documentación
+*.md
