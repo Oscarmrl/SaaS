@@ -1,12 +1,10 @@
 import type { Job } from 'bullmq'
-import { PrismaClient } from '@prisma/client'
 import Anthropic from '@anthropic-ai/sdk'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import type { JobQueuePayload } from '@brandai/shared'
 import { renderVideoBuffer } from '../lib/render-video'
+import { prisma } from '../lib/prisma'
 import type { BrandVideoProps } from '../remotion/BrandVideoComposition'
-
-const prisma = new PrismaClient()
 
 const r2 = new S3Client({
   region:   'auto',

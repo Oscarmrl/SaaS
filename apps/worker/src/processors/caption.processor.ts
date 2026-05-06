@@ -1,10 +1,8 @@
 import type { Job } from 'bullmq'
-import { PrismaClient } from '@prisma/client'
 import Anthropic from '@anthropic-ai/sdk'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import type { JobQueuePayload } from '@brandai/shared'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma'
 
 function getAnthropicClient(): Anthropic {
   if (!process.env['ANTHROPIC_API_KEY']) {

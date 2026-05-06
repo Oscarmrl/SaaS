@@ -1,10 +1,8 @@
 import type { Job } from 'bullmq'
-import { PrismaClient } from '@prisma/client'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import type { JobQueuePayload } from '@brandai/shared'
 import { generateImageBuffer } from '../lib/generate-image'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma'
 const r2 = new S3Client({
   region:   'auto',
   endpoint: `https://${process.env['R2_ACCOUNT_ID']!}.r2.cloudflarestorage.com`,
