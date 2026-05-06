@@ -1,11 +1,10 @@
 import type { Job } from 'bullmq'
 import { PrismaClient } from '@prisma/client'
-import Replicate from 'replicate'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import type { JobQueuePayload } from '@brandai/shared'
+import { generateImageBuffer } from '../lib/generate-image'
 
-const prisma   = new PrismaClient()
-const replicate = new Replicate({ auth: process.env['REPLICATE_API_TOKEN']! })
+const prisma = new PrismaClient()
 const r2 = new S3Client({
   region:   'auto',
   endpoint: `https://${process.env['R2_ACCOUNT_ID']!}.r2.cloudflarestorage.com`,
@@ -26,23 +25,10 @@ export async function processBannerJob(job: Job<JobQueuePayload>): Promise<void>
   })
 
   try {
-    const output = await replicate.run('black-forest-labs/flux-schnell', {
-      input: {
-        prompt:              `${prompt} Banner format, wide composition, marketing banner`,
-        num_outputs:         1,
-        num_inference_steps: 4,
-        output_format:       'webp',
-        output_quality:      90,
-        aspect_ratio:        '16:9',
-      },
-    })
-
-    const urls     = Array.isArray(output) ? output : [output]
-    const imageUrl = urls[0] as string
-    if (!imageUrl) throw new Error('No banner image URL returned')
-
-    const res    = await fetch(imageUrl)
-    const buffer = Buffer.from(await res.arrayBuffer())
+    const buffer = await generateImageBuffer(
+      `${prompt} Banner format, wide composition, marketing banner`,
+      '16:9'
+    )
     const key    = `users/${userId}/assets/${jobId}.webp`
 
     await r2.send(new PutObjectCommand({

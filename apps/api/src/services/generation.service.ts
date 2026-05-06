@@ -79,7 +79,7 @@ export async function generateAsset(params: GenerateParams): Promise<GenerationJ
         userPrompt,
         creditsRequired,
         provider,
-        metadata:        metadata ?? {},
+        metadata:        (metadata ?? {}) as never,
       },
     })
   })

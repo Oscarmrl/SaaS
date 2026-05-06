@@ -86,7 +86,7 @@ export const paypalWebhookRoute: FastifyPluginAsync = async (instance) => {
     const paypalOrderId = (orderId?.related_ids?.order_id ?? resource['id']) as string
 
     if (!paypalOrderId) {
-      request.log.error('PayPal webhook missing order ID', resource)
+      request.log.error({ resource }, 'PayPal webhook missing order ID')
       return reply.status(200).send({ received: true })
     }
 

@@ -32,7 +32,7 @@ export async function analyzeBrandImages(
   await prisma.brand.update({
     where: { id: brandId },
     data: {
-      extractedStyle:  extractedStyle as unknown as Record<string, unknown>,
+      extractedStyle:  extractedStyle as never,
       primaryColor:    extractedStyle.colors.primary,
       secondaryColor:  extractedStyle.colors.secondary,
     },
