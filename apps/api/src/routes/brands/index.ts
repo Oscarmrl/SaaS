@@ -3,6 +3,8 @@ import { CreateBrandSchema, UpdateBrandSchema } from '@brandai/shared'
 import { prisma } from '../../lib/prisma'
 import { NotFoundError } from '../../lib/errors'
 import { analyzeBrandImages } from '../../services/brand-analysis.service'
+import { deleteFromR2 } from '../../lib/r2'
+import { supabaseAdmin, extractSupabaseStoragePath } from '../../lib/supabase-admin'
 
 export const brandsPlugin: FastifyPluginAsync = async (instance) => {
   // GET /brands
@@ -62,9 +64,38 @@ export const brandsPlugin: FastifyPluginAsync = async (instance) => {
   // DELETE /brands/:id
   instance.delete('/:id', async (request, reply) => {
     const { id } = request.params as { id: string }
-    const existing = await prisma.brand.findFirst({ where: { id, userId: request.user.id } })
-    if (!existing) throw new NotFoundError('Brand')
 
+    const brand = await prisma.brand.findFirst({
+      where:   { id, userId: request.user.id },
+      include: { generatedAssets: true },
+    })
+    if (!brand) throw new NotFoundError('Brand')
+
+    // 1. Borrar assets generados de R2 (no bloquea si falla)
+    const r2PublicUrl = process.env['R2_PUBLIC_URL'] ?? ''
+    await Promise.allSettled(
+      brand.generatedAssets
+        .filter(a => r2PublicUrl && a.url.startsWith(r2PublicUrl))
+        .map(a => deleteFromR2(a.url.slice(r2PublicUrl.length + 1)).catch(() => {})),
+    )
+
+    // 2. Borrar logo + imágenes de referencia de Supabase Storage (no bloquea si falla)
+    const storageUrlsByBucket = new Map<string, string[]>()
+    const imageUrls = [brand.logoUrl, ...brand.referenceImageUrls].filter(Boolean) as string[]
+    for (const url of imageUrls) {
+      const parsed = extractSupabaseStoragePath(url)
+      if (!parsed) continue
+      const list = storageUrlsByBucket.get(parsed.bucket) ?? []
+      list.push(parsed.path)
+      storageUrlsByBucket.set(parsed.bucket, list)
+    }
+    await Promise.allSettled(
+      [...storageUrlsByBucket.entries()].map(([bucket, paths]) =>
+        supabaseAdmin.storage.from(bucket).remove(paths).catch(() => {}),
+      ),
+    )
+
+    // 3. Eliminar brand — Prisma cascadea GenerationJob y GeneratedAsset
     await prisma.brand.delete({ where: { id } })
     return reply.status(204).send()
   })
