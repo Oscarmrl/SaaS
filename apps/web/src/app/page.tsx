@@ -1,5 +1,7 @@
+'use client'
+
 import Link from 'next/link'
-import { Sparkles, ArrowRight, Check, Zap } from 'lucide-react'
+import { Sparkle, ArrowRight, Check, Lightning } from '@phosphor-icons/react'
 import { FanCarousel } from '@/components/landing/FanCarousel'
 
 const FEATURES = [
@@ -24,7 +26,7 @@ export default function LandingPage() {
       <nav className="px-6 sm:px-10 py-5 flex items-center justify-between max-w-[1200px] mx-auto">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-[8px] bg-[#7C3AED] flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-white" />
+            <Sparkle className="w-4 h-4 text-white" />
           </div>
           <span className="font-bold text-[#0A0A0A] text-lg">BrandAI</span>
         </div>
@@ -147,7 +149,7 @@ export default function LandingPage() {
                   </span>
                 )}
                 <div className="w-9 h-9 rounded-[10px] bg-[#7C3AED]/20 flex items-center justify-center">
-                  <Zap className={`w-4 h-4 ${popular ? 'text-violet-300' : 'text-[#7C3AED]'}`} />
+                  <Lightning className={`w-4 h-4 ${popular ? 'text-violet-300' : 'text-[#7C3AED]'}`} />
                 </div>
                 <div>
                   <h3 className={`font-extrabold text-xl ${popular ? 'text-white' : 'text-[#0A0A0A]'}`}>{name}</h3>
@@ -197,7 +199,7 @@ export default function LandingPage() {
         <div className="max-w-[1200px] mx-auto flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-[6px] bg-[#7C3AED] flex items-center justify-center">
-              <Sparkles className="w-3 h-3 text-white" />
+              <Sparkle className="w-3 h-3 text-white" />
             </div>
             <span className="text-sm font-bold text-[#0A0A0A]">BrandAI</span>
           </div>

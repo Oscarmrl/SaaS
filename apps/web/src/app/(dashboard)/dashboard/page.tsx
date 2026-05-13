@@ -1,18 +1,19 @@
-import { Sparkles, Image, FileText, Video, ArrowRight, Plus } from 'lucide-react'
+'use client'
+
+import { Sparkle, Image, FileText, VideoCamera, ArrowRight, Plus, Lightning } from '@phosphor-icons/react'
 import Link from 'next/link'
 import { CreditBalance } from '@/components/dashboard/CreditBalance'
+import { useUser } from '@/contexts/UserContext'
 
 const QUICK_ACTIONS = [
-  { type: 'IMAGE',   icon: Image,    label: 'Imagen',   credits: 10, color: 'bg-violet-50 text-violet-600' },
-  { type: 'BANNER',  icon: Sparkles, label: 'Banner',   credits:  8, color: 'bg-blue-50 text-blue-600'    },
-  { type: 'CAPTION', icon: FileText, label: 'Caption',  credits:  3, color: 'bg-green-50 text-green-600'  },
-  { type: 'VIDEO_15S', icon: Video,  label: 'Video 15s', credits: 20, color: 'bg-orange-50 text-orange-600' },
+  { type: 'IMAGE',    icon: Image,    label: 'Imagen',    credits: 10, color: 'bg-violet-50 text-violet-600'  },
+  { type: 'BANNER',   icon: Sparkle, label: 'Banner',    credits:  8, color: 'bg-blue-50 text-blue-600'      },
+  { type: 'CAPTION',  icon: FileText, label: 'Caption',   credits:  3, color: 'bg-green-50 text-green-600'    },
+  { type: 'VIDEO_15S',icon: VideoCamera,    label: 'Video 15s', credits: 20, color: 'bg-orange-50 text-orange-600'  },
 ] as const
 
-export default async function DashboardPage() {
-  // Mock data for design preview — replace with real API calls once Supabase is configured
-  const firstName     = 'Usuario'
-  const creditBalance = { balance: 220, lifetimeCredits: 500 }
+export default function DashboardPage() {
+  const { firstName, credits, loadingCredits } = useUser()
 
   return (
     <div className="animate-fade-in">
@@ -39,7 +40,7 @@ export default async function DashboardPage() {
           <div className="card">
             <h2 className="text-sm font-semibold text-[#0A0A0A] mb-4">Generar contenido</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {QUICK_ACTIONS.map(({ type, icon: Icon, label, credits, color }) => (
+              {QUICK_ACTIONS.map(({ type, icon: Icon, label, credits: cost, color }) => (
                 <Link
                   key={type}
                   href={`/generate?type=${type}`}
@@ -49,7 +50,7 @@ export default async function DashboardPage() {
                     <Icon className="w-5 h-5" />
                   </div>
                   <span className="text-xs font-semibold text-[#0A0A0A]">{label}</span>
-                  <span className="pill text-[10px]">{credits} créditos</span>
+                  <span className="pill text-[10px]">{cost} créditos</span>
                 </Link>
               ))}
             </div>
@@ -70,7 +71,7 @@ export default async function DashboardPage() {
               <p className="text-sm font-medium text-[#0A0A0A]">Sin assets todavía</p>
               <p className="text-xs text-[#6B7280] mt-1">Genera tu primer contenido y aparecerá aquí</p>
               <Link href="/generate" className="btn-accent mt-4 text-xs px-4 py-2">
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkle className="w-3.5 h-3.5" />
                 Empezar
               </Link>
             </div>
@@ -79,10 +80,18 @@ export default async function DashboardPage() {
 
         {/* Right column — sidebar stats */}
         <div className="space-y-4">
-          <CreditBalance
-            balance={creditBalance.balance}
-            lifetimeCredits={creditBalance.lifetimeCredits}
-          />
+          {loadingCredits ? (
+            <div className="card p-5 animate-pulse">
+              <div className="h-4 bg-[#F1F3F5] rounded w-24 mb-3" />
+              <div className="h-8 bg-[#F1F3F5] rounded w-16 mb-2" />
+              <div className="h-2 bg-[#F1F3F5] rounded w-full" />
+            </div>
+          ) : (
+            <CreditBalance
+              balance={credits.balance}
+              lifetimeCredits={credits.lifetimeCredits}
+            />
+          )}
 
           {/* Brands panel */}
           <div className="card p-5">

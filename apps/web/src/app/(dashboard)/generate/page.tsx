@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Sparkles, Image, FileText, Video, CheckCircle, XCircle, Loader2, Zap } from 'lucide-react'
+import { Sparkle, Image, FileText, VideoCamera, CheckCircle, XCircle, CircleNotch, Lightning, ShoppingCart } from '@phosphor-icons/react'
+import Link from 'next/link'
 import { api } from '@/lib/api-client'
+import { useUser } from '@/contexts/UserContext'
 import type { BrandProfile } from '@brandai/shared'
 
 type AssetType = 'IMAGE' | 'BANNER' | 'VIDEO_15S' | 'VIDEO_30S' | 'CAPTION'
@@ -21,10 +23,10 @@ interface Job {
 
 const ASSET_TYPES = [
   { value: 'IMAGE'    as AssetType, label: 'Imagen',    icon: Image,    credits: 10, desc: 'Foto publicitaria con IA' },
-  { value: 'BANNER'   as AssetType, label: 'Banner',    icon: Sparkles, credits:  8, desc: 'Banner para redes sociales' },
+  { value: 'BANNER'   as AssetType, label: 'Banner',    icon: Sparkle, credits:  8, desc: 'Banner para redes sociales' },
   { value: 'CAPTION'  as AssetType, label: 'Caption',   icon: FileText, credits:  3, desc: 'Texto persuasivo con IA' },
-  { value: 'VIDEO_15S'as AssetType, label: 'Video 15s', icon: Video,    credits: 20, desc: 'Mini-video animado' },
-  { value: 'VIDEO_30S'as AssetType, label: 'Video 30s', icon: Video,    credits: 35, desc: 'Video publicitario largo' },
+  { value: 'VIDEO_15S'as AssetType, label: 'Video 15s', icon: VideoCamera,    credits: 20, desc: 'Mini-video animado' },
+  { value: 'VIDEO_30S'as AssetType, label: 'Video 30s', icon: VideoCamera,    credits: 35, desc: 'Video publicitario largo' },
 ]
 
 const PLATFORMS = [
@@ -34,9 +36,34 @@ const PLATFORMS = [
   { value: 'all'       as Platform, label: 'Todas'     },
 ]
 
+function NoCreditsPanel({ balance, required }: { balance: number; required: number }) {
+  return (
+    <div className="rounded-[12px] border border-[#FDE68A] bg-[#FFFBEB] p-5 space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 rounded-[8px] bg-[#FEF3C7] flex items-center justify-center flex-shrink-0">
+          <Lightning className="w-4 h-4 text-[#D97706]" />
+        </div>
+        <p className="text-sm font-semibold text-[#92400E]">Créditos insuficientes</p>
+      </div>
+      <p className="text-xs text-[#92400E]">
+        Necesitas <span className="font-bold">{required}</span> créditos pero solo tienes{' '}
+        <span className="font-bold">{balance}</span>.
+      </p>
+      <Link
+        href="/credits"
+        className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#7C3AED] text-white text-xs font-semibold rounded-[8px] hover:bg-[#6D28D9] transition-all duration-150"
+      >
+        <ShoppingCart className="w-3.5 h-3.5" />
+        Comprar créditos
+      </Link>
+    </div>
+  )
+}
+
 function GenerateForm() {
   const searchParams = useSearchParams()
   const router       = useRouter()
+  const { credits, refreshCredits } = useUser()
 
   const [brands,     setBrands]     = useState<BrandProfile[]>([])
   const [brandId,    setBrandId]    = useState(searchParams.get('brandId') ?? '')
@@ -46,13 +73,15 @@ function GenerateForm() {
   const [loading,    setLoading]    = useState(false)
   const [job,        setJob]        = useState<Job | null>(null)
   const [polling,    setPolling]    = useState(false)
+  const [error,      setError]      = useState<string | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const selectedType = ASSET_TYPES.find(t => t.value === assetType)
+  const selectedType        = ASSET_TYPES.find(t => t.value === assetType)
+  const requiredCredits     = selectedType?.credits ?? 0
+  const hasEnoughCredits    = credits.balance >= requiredCredits
 
   useEffect(() => {
     api.get<BrandProfile[]>('/brands').then(setBrands).catch(() => {})
-    // Cleanup interval on unmount
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [])
 
@@ -67,7 +96,7 @@ function GenerateForm() {
   const pollJob = useCallback((jobId: string) => {
     setPolling(true)
     let attempts = 0
-    const MAX_ATTEMPTS = 80 // 80 × 2500ms = ~3.5 min máximo
+    const MAX_ATTEMPTS = 80
 
     intervalRef.current = setInterval(async () => {
       attempts++
@@ -76,6 +105,7 @@ function GenerateForm() {
         setJob(updated)
         if (updated.status === 'COMPLETED' || updated.status === 'FAILED') {
           stopPolling()
+          refreshCredits()
         } else if (attempts >= MAX_ATTEMPTS) {
           stopPolling()
           setJob(prev => prev ? {
@@ -88,14 +118,18 @@ function GenerateForm() {
         stopPolling()
       }
     }, 2500)
-  }, [stopPolling])
+  }, [stopPolling, refreshCredits])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!brandId || !userPrompt.trim()) return
 
+    // Guardia del lado cliente antes de llamar al API
+    if (!hasEnoughCredits) return
+
     setLoading(true)
     setJob(null)
+    setError(null)
 
     try {
       const created = await api.post<Job>('/generate', {
@@ -107,7 +141,12 @@ function GenerateForm() {
       setJob(created)
       pollJob(created.id)
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al generar el contenido')
+      const msg = err instanceof Error ? err.message : 'Error al generar el contenido'
+      // El API devuelve "Insufficient credits" cuando no hay saldo
+      if (msg.toLowerCase().includes('credit') || msg.toLowerCase().includes('crédito')) {
+        refreshCredits() // sincroniza el balance real
+      }
+      setError(msg)
     } finally {
       setLoading(false)
     }
@@ -150,7 +189,7 @@ function GenerateForm() {
         <div className="card space-y-3">
           <h2 className="text-sm font-semibold text-[#0A0A0A]">Tipo de contenido</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {ASSET_TYPES.map(({ value, label, icon: Icon, credits, desc }) => {
+            {ASSET_TYPES.map(({ value, label, icon: Icon, credits: cost, desc }) => {
               const active = assetType === value
               return (
                 <button
@@ -169,7 +208,9 @@ function GenerateForm() {
                     <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-[#6B7280]'}`} />
                   </div>
                   <span className={`text-xs font-semibold ${active ? 'text-[#7C3AED]' : 'text-[#0A0A0A]'}`}>{label}</span>
-                  <span className="pill text-[10px]">{credits} créditos</span>
+                  <span className={`pill text-[10px] ${credits.balance < cost ? 'bg-red-50 text-red-500' : ''}`}>
+                    {cost} créditos
+                  </span>
                 </button>
               )
             })}
@@ -212,16 +253,31 @@ function GenerateForm() {
           </p>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading || polling || !brandId || !userPrompt.trim()}
-          className="btn-accent w-full py-3"
-        >
-          {loading || polling
-            ? <><Loader2 className="w-4 h-4 animate-spin" /> Generando...</>
-            : <><Sparkles className="w-4 h-4" /> Generar — {selectedType?.credits} créditos</>
-          }
-        </button>
+        {/* Error genérico del API */}
+        {error && !error.toLowerCase().includes('credit') && (
+          <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-[8px] px-3 py-2.5">
+            <XCircle className="w-4 h-4 flex-shrink-0 mt-px" />
+            {error}
+          </div>
+        )}
+
+        {/* Botón — cambia según créditos */}
+        {hasEnoughCredits ? (
+          <button
+            type="submit"
+            disabled={loading || polling || !brandId || !userPrompt.trim()}
+            className="btn-accent w-full py-3"
+          >
+            {loading || polling
+              ? <><CircleNotch className="w-4 h-4 animate-spin" /> Generando...</>
+              : <><Sparkle className="w-4 h-4" /> Generar — {requiredCredits} créditos</>
+            }
+          </button>
+        ) : (
+          <div className="space-y-2">
+            <NoCreditsPanel balance={credits.balance} required={requiredCredits} />
+          </div>
+        )}
       </form>
 
       {/* Status panel */}
@@ -229,13 +285,18 @@ function GenerateForm() {
         <div className="card p-5">
           <h3 className="text-sm font-semibold text-[#0A0A0A] mb-4">Estado de generación</h3>
 
-          {!job && (
+          {!job && !error && (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <div className="w-12 h-12 rounded-full bg-[#F1F3F5] flex items-center justify-center mb-3">
-                <Sparkles className="w-5 h-5 text-[#9CA3AF]" />
+                <Sparkle className="w-5 h-5 text-[#9CA3AF]" />
               </div>
               <p className="text-xs text-[#6B7280]">El resultado aparecerá aquí</p>
             </div>
+          )}
+
+          {/* Error de créditos dentro del panel de estado */}
+          {error && (error.toLowerCase().includes('credit') || error.toLowerCase().includes('crédito')) && (
+            <NoCreditsPanel balance={credits.balance} required={requiredCredits} />
           )}
 
           {job && (
@@ -247,7 +308,7 @@ function GenerateForm() {
               `}>
                 {job.status === 'COMPLETED'  && <CheckCircle className="w-4 h-4" />}
                 {job.status === 'FAILED'     && <XCircle     className="w-4 h-4" />}
-                {(job.status === 'PENDING' || job.status === 'PROCESSING') && <Loader2 className="w-4 h-4 animate-spin" />}
+                {(job.status === 'PENDING' || job.status === 'PROCESSING') && <CircleNotch className="w-4 h-4 animate-spin" />}
                 {{
                   PENDING:    'En cola...',
                   PROCESSING: 'Generando con IA...',
@@ -283,18 +344,27 @@ function GenerateForm() {
           )}
         </div>
 
+        {/* Costos de referencia */}
         <div className="card-featured p-5">
           <div className="flex items-center gap-2 mb-2">
-            <Zap className="w-4 h-4 text-[#7C3AED]" />
+            <Lightning className="w-4 h-4 text-[#7C3AED]" />
             <span className="text-xs font-semibold text-white">Costos de créditos</span>
           </div>
           <div className="space-y-1.5 mt-3">
-            {ASSET_TYPES.map(({ label, credits }) => (
+            {ASSET_TYPES.map(({ label, credits: cost }) => (
               <div key={label} className="flex justify-between text-xs">
-                <span className="text-[#9CA3AF]">{label}</span>
-                <span className="text-white font-medium">{credits} cr.</span>
+                <span className={credits.balance < cost ? 'text-red-400' : 'text-[#9CA3AF]'}>{label}</span>
+                <span className={`font-medium ${credits.balance < cost ? 'text-red-400' : 'text-white'}`}>
+                  {cost} cr.
+                </span>
               </div>
             ))}
+          </div>
+          <div className="mt-4 pt-3 border-t border-[#222]">
+            <div className="flex justify-between text-xs">
+              <span className="text-[#9CA3AF]">Tu balance</span>
+              <span className="font-bold text-white">{credits.balance} cr.</span>
+            </div>
           </div>
         </div>
       </div>

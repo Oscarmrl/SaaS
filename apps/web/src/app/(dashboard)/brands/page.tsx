@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Briefcase } from 'lucide-react'
+import { Plus, Briefcase } from '@phosphor-icons/react'
 import { BrandCard } from '@/components/brand/BrandCard'
 import { api } from '@/lib/api-client'
 import type { BrandProfile } from '@brandai/shared'
@@ -18,6 +18,11 @@ export default function BrandsPage() {
       .catch(err => setError(err instanceof Error ? err.message : 'Error al cargar marcas'))
       .finally(() => setLoading(false))
   }, [])
+
+  async function handleDelete(id: string) {
+    await api.delete(`/brands/${id}`)
+    setBrands(prev => prev.filter(b => b.id !== id))
+  }
 
   return (
     <div>
@@ -63,7 +68,7 @@ export default function BrandsPage() {
       {!loading && !error && brands.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {brands.map(brand => (
-            <BrandCard key={brand.id} brand={brand} />
+            <BrandCard key={brand.id} brand={brand} onDelete={handleDelete} />
           ))}
         </div>
       )}

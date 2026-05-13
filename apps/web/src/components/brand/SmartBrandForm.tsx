@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Upload, X, CheckCircle, Sparkles, ArrowRight, ChevronLeft } from 'lucide-react'
+import { UploadSimple, X, CheckCircle, Sparkle, ArrowRight, CaretLeft } from '@phosphor-icons/react'
 import { createClient } from '@/lib/supabase'
 import { api } from '@/lib/api-client'
 import type { BrandProfile } from '@brandai/shared'
@@ -276,7 +276,7 @@ export function SmartBrandForm() {
     return (
       <div className="max-w-[560px] mx-auto pt-16 flex flex-col items-center gap-4">
         <div className="w-14 h-14 rounded-full bg-[#EDE9FE] flex items-center justify-center">
-          <Sparkles className="w-7 h-7 text-[#7C3AED] animate-pulse" />
+          <Sparkle className="w-7 h-7 text-[#7C3AED] animate-pulse" />
         </div>
         <h2 className="text-lg font-bold text-[#0A0A0A]">Creando tu marca...</h2>
         <p className="text-sm text-[#6B7280] text-center">
@@ -322,7 +322,7 @@ export function SmartBrandForm() {
             onClick={() => router.push('/generate')}
             className="btn-accent flex-1"
           >
-            <Sparkles className="w-4 h-4" />
+            <Sparkle className="w-4 h-4" />
             Generar contenido
             <ArrowRight className="w-4 h-4" />
           </button>
@@ -432,7 +432,7 @@ export function SmartBrandForm() {
               "
             >
               <div className="w-10 h-10 rounded-full bg-[#F1F3F5] flex items-center justify-center">
-                <Upload className="w-5 h-5 text-[#6B7280]" />
+                <UploadSimple className="w-5 h-5 text-[#6B7280]" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-[#0A0A0A]">Haz clic para subir archivos</p>
@@ -473,7 +473,7 @@ export function SmartBrandForm() {
       {/* Navigation */}
       <div className="flex gap-3">
         <button onClick={handleBack} className="btn-outline px-4">
-          <ChevronLeft className="w-4 h-4" />
+          <CaretLeft className="w-4 h-4" />
         </button>
         <button
           onClick={handleNext}

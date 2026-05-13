@@ -1,6 +1,6 @@
 'use client'
 
-import { Zap } from 'lucide-react'
+import { Lightning } from '@phosphor-icons/react'
 import Link from 'next/link'
 
 interface CreditBalanceProps {
@@ -16,7 +16,7 @@ export function CreditBalance({ balance, lifetimeCredits }: CreditBalanceProps) 
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-[8px] bg-[#EDE9FE] flex items-center justify-center">
-            <Zap className="w-4 h-4 text-[#7C3AED]" />
+            <Lightning className="w-4 h-4 text-[#7C3AED]" />
           </div>
           <span className="text-sm font-semibold text-[#0A0A0A]">Créditos</span>
         </div>

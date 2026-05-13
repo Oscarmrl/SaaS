@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Image, Sparkles, FileText, Video, Download, Trash2 } from 'lucide-react'
+import { Image, Sparkle, FileText, VideoCamera, DownloadSimple, Trash } from '@phosphor-icons/react'
 import { api } from '@/lib/api-client'
 
 type AssetType = 'IMAGE' | 'BANNER' | 'VIDEO_15S' | 'VIDEO_30S' | 'CAPTION'
@@ -36,7 +36,7 @@ const TYPE_FILTERS = [
 function AssetIcon({ type }: { type: AssetType }) {
   const cls = 'w-6 h-6 text-[#9CA3AF]'
   if (type === 'CAPTION') return <FileText className={cls} />
-  if (type.startsWith('VIDEO')) return <Video className={cls} />
+  if (type.startsWith('VIDEO')) return <VideoCamera className={cls} />
   return <Image className={cls} />
 }
 
@@ -105,7 +105,7 @@ export default function AssetsPage() {
       {!loading && assets.length === 0 && (
         <div className="card flex flex-col items-center justify-center py-20 text-center">
           <div className="w-16 h-16 rounded-full bg-[#F1F3F5] flex items-center justify-center mb-4">
-            <Sparkles className="w-7 h-7 text-[#9CA3AF]" />
+            <Sparkle className="w-7 h-7 text-[#9CA3AF]" />
           </div>
           <h3 className="text-base font-semibold text-[#0A0A0A]">Sin assets todavía</h3>
           <p className="text-sm text-[#6B7280] mt-1">
@@ -144,7 +144,7 @@ export default function AssetsPage() {
                     className="w-9 h-9 rounded-full bg-white flex items-center justify-center hover:bg-[#F1F3F5] transition-colors"
                     title="Descargar"
                   >
-                    <Download className="w-4 h-4 text-[#0A0A0A]" />
+                    <DownloadSimple className="w-4 h-4 text-[#0A0A0A]" />
                   </a>
                   <button
                     onClick={() => handleDelete(asset.id)}
@@ -152,7 +152,7 @@ export default function AssetsPage() {
                     className="w-9 h-9 rounded-full bg-white flex items-center justify-center hover:bg-red-50 transition-colors"
                     title="Eliminar"
                   >
-                    <Trash2 className="w-4 h-4 text-[#EF4444]" />
+                    <Trash className="w-4 h-4 text-[#EF4444]" />
                   </button>
                 </div>
               </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Zap, CheckCircle, ArrowUpRight, ArrowDownLeft, Clock } from 'lucide-react'
+import { Lightning, CheckCircle, ArrowUpRight, ArrowDownLeft, Clock } from '@phosphor-icons/react'
 import { api } from '@/lib/api-client'
 import { CREDIT_PACKS } from '@brandai/shared'
 
@@ -95,7 +95,7 @@ export default function CreditsPage() {
           </p>
         </div>
         <div className="w-14 h-14 rounded-full bg-[#7C3AED]/30 flex items-center justify-center">
-          <Zap className="w-7 h-7 text-[#7C3AED]" />
+          <Lightning className="w-7 h-7 text-[#7C3AED]" />
         </div>
       </div>
 
