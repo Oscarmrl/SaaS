@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { UploadSimple, X, CheckCircle, Sparkle, ArrowRight, CaretLeft } from '@phosphor-icons/react'
+import { UploadSimple, X, CheckCircle, Sparkle, ArrowRight, CaretLeft, Coffee, ForkKnife, ShoppingBag, Briefcase } from '@phosphor-icons/react'
 import { createClient } from '@/lib/supabase'
 import { api } from '@/lib/api-client'
 import type { BrandProfile } from '@brandai/shared'
@@ -20,11 +20,11 @@ interface Question {
 }
 
 const INDUSTRIES = [
-  { value: 'cafe'       as Industry, label: 'Café / Cafetería',  icon: '☕' },
-  { value: 'restaurant' as Industry, label: 'Restaurante',        icon: '🍽️' },
-  { value: 'retail'     as Industry, label: 'Tienda / Retail',   icon: '🛍️' },
-  { value: 'services'   as Industry, label: 'Servicios',          icon: '💼' },
-  { value: 'other'      as Industry, label: 'Otro negocio',       icon: '✨' },
+  { value: 'cafe'       as Industry, label: 'Café / Cafetería', Icon: Coffee      },
+  { value: 'restaurant' as Industry, label: 'Restaurante',      Icon: ForkKnife   },
+  { value: 'retail'     as Industry, label: 'Tienda / Retail',  Icon: ShoppingBag },
+  { value: 'services'   as Industry, label: 'Servicios',        Icon: Briefcase   },
+  { value: 'other'      as Industry, label: 'Otro negocio',     Icon: Sparkle     },
 ]
 
 const TONES = [
@@ -252,7 +252,7 @@ export function SmartBrandForm() {
           <p className="text-[#6B7280] text-sm mt-2">Adaptaré las preguntas a tu industria</p>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {INDUSTRIES.map(({ value, label, icon }) => (
+          {INDUSTRIES.map(({ value, label, Icon }) => (
             <button
               key={value}
               onClick={() => selectIndustry(value)}
@@ -262,7 +262,9 @@ export function SmartBrandForm() {
                 transition-all duration-150 group text-center
               "
             >
-              <span className="text-3xl">{icon}</span>
+              <div className="w-10 h-10 rounded-[10px] bg-[#F1F3F5] flex items-center justify-center group-hover:bg-[#EDE9FE] transition-colors">
+                <Icon className="w-5 h-5 text-[#6B7280] group-hover:text-[#7C3AED] transition-colors" />
+              </div>
               <span className="text-sm font-semibold text-[#0A0A0A] group-hover:text-[#7C3AED] transition-colors">{label}</span>
             </button>
           ))}

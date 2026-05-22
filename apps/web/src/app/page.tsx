@@ -1,14 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { Sparkle, ArrowRight, Check, Lightning } from '@phosphor-icons/react'
+import { Sparkle, ArrowRight, Check, Lightning, Image, FilmSlate, PencilSimple, Palette } from '@phosphor-icons/react'
 import { FanCarousel } from '@/components/landing/FanCarousel'
 
 const FEATURES = [
-  { emoji: '🖼️', title: 'Imágenes publicitarias',  desc: 'Fotos profesionales generadas con IA que respetan tu marca y paleta de colores' },
-  { emoji: '🎬', title: 'Videos 15s y 30s',         desc: 'Mini-videos con voz profesional y música, listos para publicar en redes' },
-  { emoji: '✍️', title: 'Captions en español',      desc: 'Textos persuasivos con hashtags optimizados para cada plataforma' },
-  { emoji: '🎨', title: 'Banners para redes',        desc: 'Diseños adaptados a Instagram, Facebook, WhatsApp y TikTok' },
+  { Icon: Image,        title: 'Imágenes publicitarias', desc: 'Fotos profesionales generadas con IA que respetan tu marca y paleta de colores' },
+  { Icon: FilmSlate,    title: 'Videos 15s y 30s',       desc: 'Mini-videos con voz profesional y música, listos para publicar en redes' },
+  { Icon: PencilSimple, title: 'Captions en español',    desc: 'Textos persuasivos con hashtags optimizados para cada plataforma' },
+  { Icon: Palette,      title: 'Banners para redes',     desc: 'Diseños adaptados a Instagram, Facebook, WhatsApp y TikTok' },
 ]
 
 const PACKS = [
@@ -92,9 +92,11 @@ export default function LandingPage() {
             <p className="text-[#6B7280] text-lg">Contenido profesional en segundos, adaptado a tu marca</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {FEATURES.map(({ emoji, title, desc }) => (
+            {FEATURES.map(({ Icon, title, desc }) => (
               <div key={title} className="bg-white border border-[#E5E7EB] rounded-[16px] p-6 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150">
-                <div className="text-3xl mb-4">{emoji}</div>
+                <div className="w-11 h-11 rounded-[12px] bg-[#EDE9FE] flex items-center justify-center mb-4">
+                  <Icon className="w-5 h-5 text-[#7C3AED]" weight="bold" />
+                </div>
                 <h3 className="font-bold text-[#0A0A0A] mb-2">{title}</h3>
                 <p className="text-sm text-[#6B7280] leading-relaxed">{desc}</p>
               </div>

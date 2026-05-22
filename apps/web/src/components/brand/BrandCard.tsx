@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Sparkle, ArrowRight, Trash, CircleNotch, Warning } from '@phosphor-icons/react'
+import { Sparkle, ArrowRight, Trash, CircleNotch, Warning, PencilSimple, Coffee, ForkKnife, ShoppingBag, Briefcase, type Icon as PhosphorIcon } from '@phosphor-icons/react'
 import type { BrandProfile } from '@brandai/shared'
 
 const INDUSTRY_LABELS: Record<string, string> = {
@@ -13,12 +13,12 @@ const INDUSTRY_LABELS: Record<string, string> = {
   other:      'Otro',
 }
 
-const INDUSTRY_ICONS: Record<string, string> = {
-  cafe:       '☕',
-  restaurant: '🍽️',
-  retail:     '🛍️',
-  services:   '💼',
-  other:      '✨',
+const INDUSTRY_ICONS: Record<string, PhosphorIcon> = {
+  cafe:       Coffee,
+  restaurant: ForkKnife,
+  retail:     ShoppingBag,
+  services:   Briefcase,
+  other:      Sparkle,
 }
 
 interface Props {
@@ -31,7 +31,7 @@ export function BrandCard({ brand, onDelete }: Props) {
   const [deleting,   setDeleting]   = useState(false)
 
   const industryLabel = brand.industry ? INDUSTRY_LABELS[brand.industry] : 'Sin industria'
-  const industryIcon  = brand.industry ? INDUSTRY_ICONS[brand.industry]  : '✨'
+  const IndustryIcon  = brand.industry ? INDUSTRY_ICONS[brand.industry]  : Sparkle
 
   async function handleDelete() {
     setDeleting(true)
@@ -85,10 +85,10 @@ export function BrandCard({ brand, onDelete }: Props) {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-[10px] bg-[#EDE9FE] flex items-center justify-center text-lg flex-shrink-0">
+          <div className="w-10 h-10 rounded-[10px] bg-[#EDE9FE] flex items-center justify-center flex-shrink-0">
             {brand.logoUrl
               ? <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-cover rounded-[10px]" />
-              : <span>{industryIcon}</span>
+              : <IndustryIcon className="w-5 h-5 text-[#7C3AED]" />
             }
           </div>
           <div>
@@ -97,14 +97,23 @@ export function BrandCard({ brand, onDelete }: Props) {
           </div>
         </div>
 
-        {/* Botón eliminar — visible solo en hover */}
-        <button
-          onClick={() => setConfirming(true)}
-          title="Eliminar marca"
-          className="opacity-0 group-hover:opacity-100 w-7 h-7 flex items-center justify-center rounded-[6px] text-[#9CA3AF] hover:bg-red-50 hover:text-red-600 transition-all duration-150 flex-shrink-0"
-        >
-          <Trash className="w-3.5 h-3.5" />
-        </button>
+        {/* Acciones — visibles solo en hover */}
+        <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity duration-150 flex-shrink-0">
+          <Link
+            href={`/brands/${brand.id}/edit`}
+            title="Editar marca"
+            className="w-7 h-7 flex items-center justify-center rounded-[6px] text-[#9CA3AF] hover:bg-[#EDE9FE] hover:text-[#7C3AED] transition-all duration-150"
+          >
+            <PencilSimple className="w-3.5 h-3.5" />
+          </Link>
+          <button
+            onClick={() => setConfirming(true)}
+            title="Eliminar marca"
+            className="w-7 h-7 flex items-center justify-center rounded-[6px] text-[#9CA3AF] hover:bg-red-50 hover:text-red-600 transition-all duration-150"
+          >
+            <Trash className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Meta */}

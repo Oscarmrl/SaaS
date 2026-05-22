@@ -13,7 +13,9 @@ export const CreateBrandSchema = z.object({
   referenceImageUrls:  z.array(z.string().url()).optional(),
 })
 
-export const UpdateBrandSchema = CreateBrandSchema.partial()
+export const UpdateBrandSchema = CreateBrandSchema.partial().extend({
+  logoUrl: z.string().url().nullable().optional(),
+})
 
 export type CreateBrandInput = z.infer<typeof CreateBrandSchema>
 export type UpdateBrandInput = z.infer<typeof UpdateBrandSchema>
