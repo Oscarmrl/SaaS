@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Sparkle, Image, FileText, VideoCamera, CheckCircle, XCircle, CircleNotch, Lightning, ShoppingCart } from '@phosphor-icons/react'
+import { Sparkle, Image, FileText, VideoCamera, CheckCircle, XCircle, CircleNotch, Lightning, ShoppingCart, DownloadSimple, Trash, ArrowsOut } from '@phosphor-icons/react'
 import Link from 'next/link'
 import { api } from '@/lib/api-client'
 import { useUser } from '@/contexts/UserContext'
+import { AssetPreviewModal } from '@/components/dashboard/AssetPreviewModal'
 import type { BrandProfile } from '@brandai/shared'
 
 type AssetType = 'IMAGE' | 'BANNER' | 'VIDEO_15S' | 'VIDEO_30S' | 'CAPTION'
@@ -18,7 +19,7 @@ interface Job {
   type: AssetType
   creditsRequired: number
   errorMessage?: string
-  generatedAsset?: { url: string; thumbnailUrl?: string }
+  generatedAsset?: { id: string; url: string; thumbnailUrl?: string }
 }
 
 const ASSET_TYPES = [
@@ -70,11 +71,45 @@ function GenerateForm() {
   const [assetType,  setAssetType]  = useState<AssetType>((searchParams.get('type') as AssetType) ?? 'IMAGE')
   const [platform,   setPlatform]   = useState<Platform>('instagram')
   const [userPrompt, setUserPrompt] = useState('')
-  const [loading,    setLoading]    = useState(false)
-  const [job,        setJob]        = useState<Job | null>(null)
-  const [polling,    setPolling]    = useState(false)
-  const [error,      setError]      = useState<string | null>(null)
+  const [loading,      setLoading]      = useState(false)
+  const [job,          setJob]          = useState<Job | null>(null)
+  const [polling,      setPolling]      = useState(false)
+  const [error,        setError]        = useState<string | null>(null)
+  const [discarding,   setDiscarding]   = useState(false)
+  const [previewOpen,  setPreviewOpen]  = useState(false)
+  const [captionText,  setCaptionText]  = useState<string | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Cuando un caption termina, obtener el texto del archivo .txt
+  useEffect(() => {
+    if (job?.status === 'COMPLETED' && job.type === 'CAPTION' && job.generatedAsset?.url) {
+      fetch(job.generatedAsset.url)
+        .then(r => r.text())
+        .then(setCaptionText)
+        .catch(() => setCaptionText(null))
+    } else {
+      setCaptionText(null)
+    }
+  }, [job?.status, job?.type, job?.generatedAsset?.url])
+
+  function handleDownload(url: string) {
+    const a = document.createElement('a')
+    a.href  = `/api/download?url=${encodeURIComponent(url)}`
+    a.click()
+  }
+
+  async function handleDiscard(assetId: string) {
+    setDiscarding(true)
+    try {
+      await api.delete(`/assets/${assetId}`)
+    } catch {
+      // si falla el delete en el servidor igual limpiamos la UI
+    } finally {
+      setDiscarding(false)
+      setJob(null)
+      setError(null)
+    }
+  }
 
   const selectedType        = ASSET_TYPES.find(t => t.value === assetType)
   const requiredCredits     = selectedType?.credits ?? 0
@@ -322,23 +357,94 @@ function GenerateForm() {
               )}
 
               {job.status === 'COMPLETED' && job.generatedAsset && (
-                <div className="space-y-2">
-                  {job.generatedAsset.thumbnailUrl && (
-                    <img
-                      src={job.generatedAsset.thumbnailUrl}
-                      alt="Asset generado"
-                      className="w-full rounded-[8px] object-cover"
+                <>
+                  {/* Modal de previsualización */}
+                  {previewOpen && (
+                    <AssetPreviewModal
+                      url={job.generatedAsset.url}
+                      type={job.type}
+                      captionText={captionText}
+                      onClose={() => setPreviewOpen(false)}
+                      onDownload={() => handleDownload(job.generatedAsset!.url)}
+                      onDestructive={async () => {
+                        await handleDiscard(job.generatedAsset!.id)
+                        setPreviewOpen(false)
+                      }}
+                      destructiveLabel="Descartar"
+                      destructiveLoading={discarding}
                     />
                   )}
-                  <a
-                    href={job.generatedAsset.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-outline text-xs w-full py-2"
-                  >
-                    Ver / Descargar
-                  </a>
-                </div>
+
+                  <div className="space-y-3">
+                    {/* Thumbnail clickeable — abre el modal */}
+                    <button
+                      type="button"
+                      onClick={() => setPreviewOpen(true)}
+                      className="w-full rounded-[10px] overflow-hidden border border-[#E5E7EB] bg-[#F1F3F5] relative group/prev block"
+                    >
+                      {job.type === 'VIDEO_15S' || job.type === 'VIDEO_30S' ? (
+                        <video
+                          src={job.generatedAsset.url}
+                          preload="metadata"
+                          muted
+                          playsInline
+                          className="w-full max-h-48 object-cover bg-black"
+                        />
+                      ) : job.type === 'CAPTION' ? (
+                        <div className="p-4 min-h-[80px] text-left">
+                          {captionText
+                            ? <p className="text-xs text-[#0A0A0A] leading-relaxed line-clamp-4 whitespace-pre-wrap">{captionText}</p>
+                            : <p className="text-xs text-[#9CA3AF] italic">Cargando texto…</p>
+                          }
+                        </div>
+                      ) : (
+                        <img
+                          src={job.generatedAsset.url}
+                          alt="Asset generado"
+                          className="w-full max-h-48 object-cover"
+                        />
+                      )}
+
+                      {/* Overlay "Ver en grande" */}
+                      <div className="absolute inset-0 bg-black/0 group-hover/prev:bg-black/30 transition-colors duration-150 flex items-center justify-center">
+                        <div className="opacity-0 group-hover/prev:opacity-100 transition-opacity duration-150 flex items-center gap-1.5 bg-black/70 text-white text-xs font-semibold px-3 py-1.5 rounded-full">
+                          <ArrowsOut className="w-3.5 h-3.5" />
+                          Ver en grande
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Acciones rápidas */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleDownload(job.generatedAsset!.url)}
+                        className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-[8px] bg-[#7C3AED] text-white text-xs font-semibold hover:bg-[#6D28D9] transition-all duration-150"
+                      >
+                        <DownloadSimple className="w-3.5 h-3.5" />
+                        Descargar
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDiscard(job.generatedAsset!.id)}
+                        disabled={discarding}
+                        className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-[8px] border border-[#E5E7EB] text-[#6B7280] text-xs font-semibold hover:bg-[#F1F3F5] hover:text-[#EF4444] hover:border-[#EF4444] transition-all duration-150 disabled:opacity-60"
+                      >
+                        {discarding
+                          ? <CircleNotch className="w-3.5 h-3.5 animate-spin" />
+                          : <Trash className="w-3.5 h-3.5" />
+                        }
+                        {discarding ? 'Eliminando…' : 'Descartar'}
+                      </button>
+                    </div>
+
+                    <p className="text-[10px] text-[#9CA3AF] text-center">
+                      El asset queda guardado en{' '}
+                      <a href="/assets" className="text-[#7C3AED] hover:underline">Mis assets</a>
+                    </p>
+                  </div>
+                </>
               )}
             </div>
           )}
