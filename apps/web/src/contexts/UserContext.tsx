@@ -18,6 +18,7 @@ interface UserContextValue {
   credits: CreditAccount
   loadingCredits: boolean
   refreshCredits: () => Promise<void>
+  isAdmin: boolean
 }
 
 const UserContext = createContext<UserContextValue>({
@@ -28,6 +29,7 @@ const UserContext = createContext<UserContextValue>({
   credits: { balance: 0, lifetimeCredits: 0 },
   loadingCredits: true,
   refreshCredits: async () => {},
+  isAdmin: false,
 })
 
 export function useUser() {
@@ -38,6 +40,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser]               = useState<User | null>(null)
   const [credits, setCredits]         = useState<CreditAccount>({ balance: 0, lifetimeCredits: 0 })
   const [loadingCredits, setLoading]  = useState(true)
+  const [role, setRole]               = useState<string | null>(null)
 
   const supabase = createClient()
 
@@ -67,6 +70,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     if (user) refreshCredits()
   }, [user, refreshCredits])
 
+  useEffect(() => {
+    if (!user) { setRole(null); return }
+    api.get<{ role: string }>('/user/me')
+      .then((data) => setRole(data.role))
+      .catch(() => setRole(null))
+  }, [user])
+
   // Compatibilidad: email/password guarda full_name, Google guarda name o full_name
   const meta        = user?.user_metadata ?? {}
   const displayName = meta.full_name || meta.name || user?.email?.split('@')[0] || 'Usuario'
@@ -74,7 +84,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const avatarUrl   = (meta.avatar_url as string | undefined) ?? null
 
   return (
-    <UserContext.Provider value={{ user, displayName, firstName, avatarUrl, credits, loadingCredits, refreshCredits }}>
+    <UserContext.Provider value={{ user, displayName, firstName, avatarUrl, credits, loadingCredits, refreshCredits, isAdmin: role === 'ADMIN' }}>
       {children}
     </UserContext.Provider>
   )

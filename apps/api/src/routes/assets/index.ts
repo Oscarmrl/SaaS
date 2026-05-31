@@ -22,7 +22,16 @@ export const assetsPlugin: FastifyPluginAsync = async (instance) => {
         orderBy: { createdAt: 'desc' },
         skip:    (query.page - 1) * query.pageSize,
         take:    query.pageSize,
-        include: { brand: { select: { name: true } } },
+        select: {
+          id:             true,
+          type:           true,
+          url:            true,
+          thumbnailUrl:   true,
+          creditsCost:    true,
+          platform:       true,
+          createdAt:      true,
+          brand:          { select: { name: true } },
+        },
       }),
       prisma.generatedAsset.count({ where }),
     ])

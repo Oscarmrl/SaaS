@@ -1,7 +1,7 @@
 import { prisma } from '../lib/prisma'
-import { getHaikuProvider } from '../ai/factory'
+import { getTextProvider } from '../ai/factory'
 import type { ExtractedBrandStyle } from '@brandai/shared'
-import { ClaudeHaikuProvider } from '../ai/providers/text/claude-haiku'
+import { ClaudeSonnetProvider } from '../ai/providers/text/claude-sonnet'
 import { NotFoundError, AppError } from '../lib/errors'
 
 export async function analyzeBrandImages(
@@ -22,9 +22,9 @@ export async function analyzeBrandImages(
     throw new AppError('NO_IMAGES', 'Brand has no images to analyze', 422)
   }
 
-  const provider = getHaikuProvider()
-  if (!(provider instanceof ClaudeHaikuProvider)) {
-    throw new AppError('PROVIDER_ERROR', 'Brand analysis requires Claude Haiku provider', 500)
+  const provider = getTextProvider()
+  if (!(provider instanceof ClaudeSonnetProvider)) {
+    throw new AppError('PROVIDER_ERROR', 'Brand analysis requires Claude Sonnet provider', 500)
   }
 
   const extractedStyle = await provider.analyzeBrandImages(imageUrls)

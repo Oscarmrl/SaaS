@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Briefcase } from '@phosphor-icons/react'
+import { IconPlus, IconBriefcase } from '@tabler/icons-react'
+import toast from 'react-hot-toast'
 import { BrandCard } from '@/components/brand/BrandCard'
 import { api } from '@/lib/api-client'
 import type { BrandProfile } from '@brandai/shared'
@@ -10,57 +11,60 @@ import type { BrandProfile } from '@brandai/shared'
 export default function BrandsPage() {
   const [brands,  setBrands]  = useState<BrandProfile[]>([])
   const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState<string | null>(null)
+  const [error,   setError]   = useState(false)
 
   useEffect(() => {
     api.get<BrandProfile[]>('/brands')
       .then(setBrands)
-      .catch(err => setError(err instanceof Error ? err.message : 'Error al cargar marcas'))
+      .catch(() => { toast.error('Error al cargar las marcas'); setError(true) })
       .finally(() => setLoading(false))
   }, [])
 
   async function handleDelete(id: string) {
-    await api.delete(`/brands/${id}`)
-    setBrands(prev => prev.filter(b => b.id !== id))
+    try {
+      await api.delete(`/brands/${id}`)
+      setBrands(prev => prev.filter(b => b.id !== id))
+      toast.success('Marca eliminada')
+    } catch {
+      toast.error('No se pudo eliminar la marca')
+    }
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+    <div className="animate-fade-in">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-[#0A0A0A]">Mis marcas</h1>
-          <p className="text-sm text-[#6B7280] mt-1">Gestiona las identidades de tus negocios</p>
+          <h1 className="page-title">Mis marcas</h1>
+          <p className="page-subtitle">Gestiona las identidades de tus negocios</p>
         </div>
         <Link href="/brands/new" className="btn-primary">
-          <Plus className="w-4 h-4" /> Nueva marca
+          <IconPlus size={15} stroke={2} /> Nueva marca
         </Link>
       </div>
 
-      {/* States */}
       {loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="card h-48 skeleton" />
-          ))}
+          {[1, 2, 3].map(i => <div key={i} className="card h-52 skeleton" />)}
         </div>
       )}
 
       {!loading && error && (
         <div className="card text-center py-12">
-          <p className="text-sm text-[#EF4444]">{error}</p>
+          <p className="text-sm text-[#71717A]">No se pudieron cargar las marcas</p>
         </div>
       )}
 
       {!loading && !error && brands.length === 0 && (
-        <div className="card flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-full bg-[#F1F3F5] flex items-center justify-center mb-4">
-            <Briefcase className="w-7 h-7 text-[#9CA3AF]" />
+        <div className="card flex flex-col items-center justify-center py-20 text-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-[#F4F4F5] flex items-center justify-center">
+            <IconBriefcase size={20} stroke={1.5} className="text-[#A1A1AA]" />
           </div>
-          <h3 className="text-base font-semibold text-[#0A0A0A]">Todavía no tienes marcas</h3>
-          <p className="text-sm text-[#6B7280] mt-1 mb-6">Crea tu primera marca para empezar a generar contenido</p>
+          <div>
+            <h3 className="text-sm font-semibold text-[#09090B]">Todavía no tienes marcas</h3>
+            <p className="text-xs text-[#71717A] mt-1">Crea tu primera marca para empezar a generar contenido</p>
+          </div>
           <Link href="/brands/new" className="btn-accent">
-            <Plus className="w-4 h-4" /> Crear primera marca
+            <IconPlus size={15} stroke={2} /> Crear primera marca
           </Link>
         </div>
       )}

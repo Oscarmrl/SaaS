@@ -100,7 +100,7 @@ export const brandsPlugin: FastifyPluginAsync = async (instance) => {
     return reply.status(204).send()
   })
 
-  // POST /brands/:id/analyze — trigger Claude Haiku brand analysis
+  // POST /brands/:id/analyze — trigger Claude Sonnet brand analysis
   instance.post('/:id/analyze', async (request, reply) => {
     const { id } = request.params as { id: string }
     const result  = await analyzeBrandImages(id, request.user.id)

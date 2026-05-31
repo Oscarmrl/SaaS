@@ -3,7 +3,13 @@ import type { VoiceGenerationParams } from '@brandai/shared'
 import { ExternalServiceError } from '../../../lib/errors'
 
 const API_URL = 'https://api.elevenlabs.io/v1'
-const DEFAULT_VOICE_ID = '21m00Tcm4TlvDq8ikWAM' // Rachel — natural, clear
+
+// Voz por defecto: Daniel — tono cálido, profesional, neutro en español LATAM
+// Configurable vía ELEVENLABS_VOICE_ID en .env
+const DEFAULT_VOICE_ID = 'onwK4e9ZLuTAKqWW03F9'
+
+// eleven_multilingual_v2 — mejor calidad para español, soporta múltiples acentos LATAM
+const DEFAULT_MODEL = 'eleven_multilingual_v2'
 
 export class ElevenLabsProvider implements AIVoiceProvider {
   readonly providerName = 'elevenlabs'
@@ -19,9 +25,9 @@ export class ElevenLabsProvider implements AIVoiceProvider {
   async generateVoice(params: VoiceGenerationParams): Promise<Buffer> {
     const {
       text,
-      voiceId       = DEFAULT_VOICE_ID,
-      stability     = 0.5,
-      similarityBoost = 0.75,
+      voiceId         = process.env['ELEVENLABS_VOICE_ID'] ?? DEFAULT_VOICE_ID,
+      stability       = 0.45,
+      similarityBoost = 0.80,
     } = params
 
     const response = await fetch(`${API_URL}/text-to-speech/${voiceId}`, {
@@ -33,10 +39,12 @@ export class ElevenLabsProvider implements AIVoiceProvider {
       },
       body: JSON.stringify({
         text,
-        model_id: 'eleven_turbo_v2',
+        model_id: DEFAULT_MODEL,
         voice_settings: {
           stability,
-          similarity_boost: similarityBoost,
+          similarity_boost:   similarityBoost,
+          style:              0.30,   // algo de expresividad para publicidad
+          use_speaker_boost:  true,
         },
       }),
     })
