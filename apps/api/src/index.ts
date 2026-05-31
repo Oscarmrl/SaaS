@@ -7,6 +7,8 @@ import { creditsPlugin } from './routes/credits/index'
 import { brandsPlugin } from './routes/brands/index'
 import { generatePlugin } from './routes/generate/index'
 import { assetsPlugin } from './routes/assets/index'
+import { userPlugin } from './routes/user/index'
+import { adminPlugin } from './routes/admin/index'
 import { paypalWebhookRoute } from './routes/webhooks/paypal.route'
 import { AppError } from './lib/errors'
 
@@ -57,10 +59,12 @@ async function start(): Promise<void> {
   // Authenticated routes (scoped auth hook)
   await server.register(async (instance) => {
     instance.addHook('preHandler', authMiddleware)
+    await instance.register(userPlugin,     { prefix: '/user' })
     await instance.register(creditsPlugin,  { prefix: '/credits' })
     await instance.register(brandsPlugin,   { prefix: '/brands' })
     await instance.register(generatePlugin, { prefix: '/generate' })
     await instance.register(assetsPlugin,   { prefix: '/assets' })
+    await instance.register(adminPlugin,    { prefix: '/admin' })
   })
 
   const port = Number(process.env['PORT'] ?? 3001)
