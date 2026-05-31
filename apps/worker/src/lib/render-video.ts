@@ -1,4 +1,5 @@
 import path from 'path'
+import os from 'os'
 import { mkdir, readFile, rm } from 'fs/promises'
 import { tmpdir } from 'os'
 import { randomUUID } from 'crypto'
@@ -6,12 +7,27 @@ import { bundle } from '@remotion/bundler'
 import { renderMedia, selectComposition } from '@remotion/renderer'
 import type { BrandVideoProps } from '../remotion/BrandVideoComposition'
 
-const FPS = 30
+// 24fps = estándar cinematográfico — 20% menos frames que 30fps, calidad idéntica para redes sociales
+export const FPS = 24
+
+// Concurrencia: cuántas instancias de Chrome renderizan frames en paralelo.
+// Por defecto Remotion usa cpus()/2. Lo forzamos a usar más para máxima velocidad.
+// En Railway/Docker con pocos cores, el env var permite ajustarlo por deployment.
+function getConcurrency(): number {
+  const fromEnv = parseInt(process.env['REMOTION_CONCURRENCY'] ?? '0')
+  if (fromEnv > 0) return fromEnv
+  const cpus = os.cpus().length
+  return Math.max(2, Math.floor(cpus * 0.75))
+}
 
 export type { VideoScene, BrandVideoProps as VideoScript } from '../remotion/BrandVideoComposition'
 
 // Cached bundle path — built once per worker process
 let _bundlePath: string | undefined
+
+export async function warmupBundle(): Promise<void> {
+  await getBundlePath()
+}
 
 async function getBundlePath(): Promise<string> {
   if (_bundlePath) return _bundlePath
@@ -53,16 +69,31 @@ export async function renderVideoBuffer(
       inputProps,
     })
 
+    const concurrency = getConcurrency()
+    console.log(`[Remotion] concurrency: ${concurrency} | fps: ${FPS} | ${width}x${height}`)
+
     await renderMedia({
-      composition:     { ...composition, durationInFrames: totalFrames, width, height },
-      serveUrl:        bundlePath,
-      codec:           'h264',
-      outputLocation:  outputPath,
+      composition:       { ...composition, durationInFrames: totalFrames, fps: FPS, width, height },
+      serveUrl:          bundlePath,
+      codec:             'h264',
+      outputLocation:    outputPath,
       inputProps,
       browserExecutable: process.env['REMOTION_CHROME_EXECUTABLE'],
+      concurrency,
+      // ── Chromium renderer ─────────────────────────────────────────────────
+      // swangle = SwiftANGLE: más rápido que el swiftshader por defecto en Linux/Docker
+      // headless. Sin GPU ni cambio de calidad — solo el backend de rasterización.
+      // En Mac usa el stack nativo (no afecta). Env var para sobreescribir si falla.
+      chromiumOptions: {
+        gl: (process.env['REMOTION_GL'] ?? 'swangle') as 'swangle' | 'swiftshader' | 'angle' | 'egl',
+      },
+      // ── Quality settings ──────────────────────────────────────────────────
+      crf:         23,
+      jpegQuality: 85,
+      // ─────────────────────────────────────────────────────────────────────
       onProgress: ({ progress }) => {
         const pct = Math.round(progress * 100)
-        if (pct % 25 === 0) console.log(`[Remotion] Render: ${pct}%`)
+        if (pct % 10 === 0) console.log(`[Remotion] Render: ${pct}%`)
       },
     })
 

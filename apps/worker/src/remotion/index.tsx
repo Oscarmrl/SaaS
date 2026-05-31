@@ -10,11 +10,16 @@ const VideoComp = BrandVideoComposition as unknown as ComponentType<AnyProps>
 
 const DEFAULT_PROPS: BrandVideoProps = {
   scenes: [
-    { text: 'Tu Marca',       subtext: 'Tu tagline aquí',          durationInSeconds: 5 },
-    { text: 'Tu Producto',    subtext: 'Lo mejor para tu negocio', durationInSeconds: 5 },
-    { text: '¡Contáctanos!',  subtext: 'Visítanos hoy',            durationInSeconds: 5 },
+    { text: 'Tu Marca',            subtext: 'Tu tagline aquí',                      durationInSeconds: 5, layout: 'intro'   },
+    { text: '¿Por qué elegirnos?', subtext: 'Resultados reales, sin frases vacías', durationInSeconds: 5, layout: 'content' },
+    { text: '¡Únete hoy!',         subtext: 'Plazas limitadas',                     durationInSeconds: 5, layout: 'cta'     },
   ],
-  brandColor: '#7C3AED',
+  brandColor:          '#7C3AED',
+  secondaryColor:      '#A855F7',
+  accentColor:         '#EDE9FE',
+  brandName:           'Tu Marca',
+  referenceImageUrls:  [],
+  seed:                42,         // para preview en Remotion Studio
 }
 
 function Root() {
@@ -22,8 +27,8 @@ function Root() {
     <Composition
       id="BrandVideo"
       component={VideoComp}
-      durationInFrames={450}
-      fps={30}
+      durationInFrames={360}
+      fps={24}
       width={1280}
       height={720}
       defaultProps={DEFAULT_PROPS as unknown as AnyProps}

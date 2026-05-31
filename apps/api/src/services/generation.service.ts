@@ -32,14 +32,13 @@ export async function generateAsset(params: GenerateParams): Promise<GenerationJ
 
   const creditsRequired = CREDIT_COSTS[type]
 
-  // 1. Check credits
-  const account = await prisma.creditAccount.findUnique({ where: { userId } })
-  if (!account || account.balance < creditsRequired) {
-    throw new InsufficientCreditsError()
-  }
+  // 1. Check credits + load brand in parallel
+  const [account, brand] = await Promise.all([
+    prisma.creditAccount.findUnique({ where: { userId } }),
+    prisma.brand.findFirst({ where: { id: brandId, userId } }),
+  ])
 
-  // 2. Load brand
-  const brand = await prisma.brand.findFirst({ where: { id: brandId, userId } })
+  if (!account || account.balance < creditsRequired) throw new InsufficientCreditsError()
   if (!brand) throw new NotFoundError('Brand')
 
   // 3. Build enriched prompt
@@ -119,8 +118,17 @@ export async function generateAsset(params: GenerateParams): Promise<GenerationJ
 
 export async function getJobStatus(jobId: string, userId: string) {
   const job = await prisma.generationJob.findFirst({
-    where: { id: jobId, userId },
-    include: { generatedAsset: true },
+    where:  { id: jobId, userId },
+    select: {
+      id:             true,
+      status:         true,
+      type:           true,
+      creditsRequired:true,
+      errorMessage:   true,
+      generatedAsset: {
+        select: { id: true, url: true, thumbnailUrl: true },
+      },
+    },
   })
   if (!job) throw new NotFoundError('GenerationJob')
   return job

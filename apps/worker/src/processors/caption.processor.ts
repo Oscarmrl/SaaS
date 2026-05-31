@@ -20,6 +20,25 @@ const r2 = new S3Client({
   },
 })
 
+function cleanCaption(raw: string): string {
+  let text = raw.trim()
+
+  // Strip intro lines: "Here's a caption...", "Here is your...", etc.
+  text = text.replace(/^here[''’]?s\s+[^\n]*\n+/i, '')
+  text = text.replace(/^here\s+is\s+[^\n]*\n+/i, '')
+
+  // Strip leading/trailing markdown separators (--- or ***)
+  text = text.replace(/^[-*]{3,}\s*\n/gm, '')
+  text = text.replace(/\n\s*[-*]{3,}\s*$/g, '')
+
+  // Strip trailing character-count or meta notes
+  text = text.replace(/\n+\*?_?character count[^\n]*\n?$/im, '')
+  text = text.replace(/\n+\*[^\n]+characters[^\n]*\*\s*$/im, '')
+  text = text.replace(/\n+_[^\n]+characters[^\n]*_\s*$/im, '')
+
+  return text.trim()
+}
+
 export async function processCaptionJob(job: Job<JobQueuePayload>): Promise<void> {
   const { jobId, userId, brandId, type, prompt } = job.data
 
@@ -33,14 +52,23 @@ export async function processCaptionJob(job: Job<JobQueuePayload>): Promise<void
     const message = await anthropic.messages.create({
       model:      'claude-sonnet-4-6',
       max_tokens:  512,
-      system:     'You are a professional social media copywriter for small businesses in Latin America. Write engaging, authentic captions in Spanish.',
-      messages:   [{ role: 'user', content: prompt }],
+      system: `You are a professional social media copywriter for small businesses.
+Write engaging, authentic captions adapted to the brand's tone and platform.
+
+CRITICAL RULES — you must follow these without exception:
+- Output ONLY the caption text, ready to paste directly into Instagram/Facebook/etc.
+- Do NOT include any introduction like "Here's a caption..." or "Here is your caption..."
+- Do NOT include markdown separators (--- or ***)
+- Do NOT include character counts, notes, or any meta-commentary
+- Do NOT wrap the caption in quotes or code blocks
+- Start directly with the first word of the caption`,
+      messages: [{ role: 'user', content: prompt }],
     })
 
     const block = message.content[0]
     if (!block || block.type !== 'text') throw new Error('No caption text returned')
 
-    const captionText = block.text
+    const captionText = cleanCaption(block.text)
     const buffer      = Buffer.from(captionText, 'utf-8')
     const key         = `users/${userId}/assets/${jobId}.txt`
 

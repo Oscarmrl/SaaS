@@ -88,10 +88,12 @@ export interface BrandProfile {
 
 export interface ExtractedBrandStyle {
   colors: {
-    primary: string
-    secondary: string
-    accent?: string
-    background?: string
+    primary: string         // color dominante de marca (botones, CTAs, áreas grandes)
+    secondary: string       // segundo color de soporte (gradientes, contraste)
+    accent?: string         // pop/destacado (badges, líneas decorativas)
+    background?: string     // base/canvas
+    dark?: string           // tono oscuro derivado para sombras y fondos
+    light?: string          // tono claro derivado para highlights
   }
   visualStyle: string
   fonts: string[]
