@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, UploadSimple, X, CircleNotch, CheckCircle, Trash,
-  Coffee, ForkKnife, ShoppingBag, Briefcase, Sparkle,
-} from '@phosphor-icons/react'
+  IconArrowLeft, IconUpload, IconX, IconLoader2, IconCircleCheck, IconTrash,
+  IconCoffee, IconToolsKitchen2, IconShoppingBag, IconBriefcase, IconSparkles,
+} from '@tabler/icons-react'
+import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase'
 import { api } from '@/lib/api-client'
 import type { BrandProfile } from '@brandai/shared'
@@ -23,11 +24,11 @@ function extractStoragePath(url: string): { bucket: string; path: string } | nul
 }
 
 const INDUSTRIES = [
-  { value: 'cafe',       label: 'Café',        Icon: Coffee      },
-  { value: 'restaurant', label: 'Restaurante', Icon: ForkKnife   },
-  { value: 'retail',     label: 'Retail',      Icon: ShoppingBag },
-  { value: 'services',   label: 'Servicios',   Icon: Briefcase   },
-  { value: 'other',      label: 'Otro',        Icon: Sparkle     },
+  { value: 'cafe',       label: 'Café',        Icon: IconCoffee         },
+  { value: 'restaurant', label: 'Restaurante', Icon: IconToolsKitchen2  },
+  { value: 'retail',     label: 'Retail',      Icon: IconShoppingBag    },
+  { value: 'services',   label: 'Servicios',   Icon: IconBriefcase      },
+  { value: 'other',      label: 'Otro',        Icon: IconSparkles       },
 ]
 
 const TONES = [
@@ -49,7 +50,6 @@ export default function EditBrandPage() {
 
   const [loadingBrand, setLoadingBrand] = useState(true)
   const [saving,       setSaving]       = useState(false)
-  const [error,        setError]        = useState<string | null>(null)
   const [notFound,     setNotFound]     = useState(false)
 
   // Campos de texto
@@ -126,7 +126,6 @@ export default function EditBrandPage() {
   async function handleSave() {
     if (!name.trim()) return
     setSaving(true)
-    setError(null)
 
     try {
       const supabase = createClient()
@@ -205,9 +204,10 @@ export default function EditBrandPage() {
         await api.post(`/brands/${id}/analyze`, {}).catch(() => {})
       }
 
+      toast.success('Marca actualizada')
       router.push('/brands')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al guardar los cambios')
+      toast.error(err instanceof Error ? err.message : 'Error al guardar los cambios')
     } finally {
       setSaving(false)
     }
@@ -244,7 +244,7 @@ export default function EditBrandPage() {
           href="/brands"
           className="w-9 h-9 flex items-center justify-center rounded-[8px] border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F1F3F5] transition-all duration-150 flex-shrink-0"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <IconArrowLeft size={15} stroke={2} />
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-[#0A0A0A]">Editar marca</h1>
@@ -302,11 +302,11 @@ export default function EditBrandPage() {
                   onClick={() => setIndustry(value)}
                   className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-[10px] border text-center transition-all duration-150
                     ${industry === value
-                      ? 'border-[#7C3AED] bg-[#EDE9FE]'
-                      : 'border-[#E5E7EB] bg-white hover:border-[#7C3AED] hover:bg-[#EDE9FE]/20'}`}
+                      ? 'border-[#09090B] bg-[#F4F4F5]'
+                      : 'border-[#E5E7EB] bg-white hover:border-[#09090B] hover:bg-[#F4F4F5]/20'}`}
                 >
-                  <Icon className={`w-5 h-5 ${industry === value ? 'text-[#7C3AED]' : 'text-[#6B7280]'}`} weight={industry === value ? 'bold' : 'regular'} />
-                  <span className={`text-[10px] font-semibold leading-tight ${industry === value ? 'text-[#7C3AED]' : 'text-[#374151]'}`}>
+                  <Icon size={18} stroke={industry === value ? 2.0 : 1.6} className={industry === value ? 'text-[#09090B]' : 'text-[#71717A]'} />
+                  <span className={`text-[10px] font-semibold leading-tight ${industry === value ? 'text-[#09090B]' : 'text-[#374151]'}`}>
                     {label}
                   </span>
                 </button>
@@ -324,8 +324,8 @@ export default function EditBrandPage() {
                   onClick={() => setToneOfVoice(value)}
                   className={`text-left px-4 py-2.5 rounded-[10px] border text-sm font-medium transition-all duration-150
                     ${toneOfVoice === value
-                      ? 'border-[#7C3AED] bg-[#EDE9FE] text-[#7C3AED]'
-                      : 'border-[#E5E7EB] bg-white text-[#0A0A0A] hover:border-[#7C3AED] hover:bg-[#EDE9FE]/20'}`}
+                      ? 'border-[#09090B] bg-[#F4F4F5] text-[#09090B]'
+                      : 'border-[#E5E7EB] bg-white text-[#0A0A0A] hover:border-[#09090B] hover:bg-[#F4F4F5]/20'}`}
                 >
                   {label}
                 </button>
@@ -358,7 +358,7 @@ export default function EditBrandPage() {
                   onClick={removeLogo}
                   className="flex items-center gap-1.5 text-xs font-medium text-[#EF4444] hover:underline"
                 >
-                  <Trash className="w-3.5 h-3.5" />
+                  <IconTrash size={14} stroke={1.8} />
                   Eliminar logo
                 </button>
               </div>
@@ -367,10 +367,10 @@ export default function EditBrandPage() {
             <button
               type="button"
               onClick={() => logoRef.current?.click()}
-              className="w-full border-2 border-dashed border-[#D1D5DB] rounded-[12px] p-6 flex flex-col items-center gap-2 hover:border-[#7C3AED] hover:bg-[#EDE9FE]/10 transition-all duration-150"
+              className="w-full border-2 border-dashed border-[#D1D5DB] rounded-[12px] p-6 flex flex-col items-center gap-2 hover:border-[#09090B] hover:bg-[#F4F4F5]/10 transition-all duration-150"
             >
               <div className="w-9 h-9 rounded-full bg-[#F1F3F5] flex items-center justify-center">
-                <UploadSimple className="w-4 h-4 text-[#6B7280]" />
+                <IconUpload size={15} stroke={1.7} className="text-[#71717A]" />
               </div>
               <span className="text-xs font-semibold text-[#0A0A0A]">Subir logo</span>
               <span className="text-[10px] text-[#6B7280]">PNG, JPG, WEBP</span>
@@ -392,9 +392,9 @@ export default function EditBrandPage() {
             <button
               type="button"
               onClick={() => refImgRef.current?.click()}
-              className="flex items-center gap-1.5 text-xs font-semibold text-[#7C3AED] hover:text-[#6D28D9] transition-colors"
+              className="flex items-center gap-1.5 text-xs font-semibold text-[#09090B] hover:text-[#18181B] transition-colors"
             >
-              <UploadSimple className="w-3.5 h-3.5" />
+              <IconUpload size={14} stroke={1.8} />
               Añadir
             </button>
           </div>
@@ -415,7 +415,7 @@ export default function EditBrandPage() {
                     className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Quitar imagen"
                   >
-                    <X className="w-3 h-3 text-white" />
+                    <IconX size={12} stroke={2} className="text-white" />
                   </button>
                 </div>
               ))}
@@ -426,9 +426,9 @@ export default function EditBrandPage() {
                   <img
                     src={preview}
                     alt="Nueva"
-                    className="w-full h-full object-cover rounded-[8px] border-2 border-[#7C3AED]"
+                    className="w-full h-full object-cover rounded-[8px] border-2 border-[#09090B]"
                   />
-                  <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded-full bg-[#7C3AED] text-[9px] font-bold text-white leading-none">
+                  <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded-full bg-[#09090B] text-[9px] font-bold text-white leading-none">
                     NUEVA
                   </div>
                   <button
@@ -437,7 +437,7 @@ export default function EditBrandPage() {
                     className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Quitar imagen"
                   >
-                    <X className="w-3 h-3 text-white" />
+                    <IconX size={12} stroke={2} className="text-white" />
                   </button>
                 </div>
               ))}
@@ -446,22 +446,15 @@ export default function EditBrandPage() {
             <button
               type="button"
               onClick={() => refImgRef.current?.click()}
-              className="w-full border-2 border-dashed border-[#D1D5DB] rounded-[12px] p-6 flex flex-col items-center gap-2 hover:border-[#7C3AED] hover:bg-[#EDE9FE]/10 transition-all duration-150"
+              className="w-full border-2 border-dashed border-[#D1D5DB] rounded-[12px] p-6 flex flex-col items-center gap-2 hover:border-[#09090B] hover:bg-[#F4F4F5]/10 transition-all duration-150"
             >
-              <UploadSimple className="w-5 h-5 text-[#9CA3AF]" />
+              <IconUpload size={20} stroke={1.5} className="text-[#A1A1AA]" />
               <span className="text-xs text-[#6B7280]">Sin imágenes — haz clic para añadir</span>
             </button>
           )}
 
           <input ref={refImgRef} type="file" accept="image/*" multiple className="hidden" onChange={handleRefFiles} />
         </div>
-
-        {/* Error */}
-        {error && (
-          <p className="text-sm text-[#EF4444] bg-red-50 border border-red-200 rounded-[8px] px-3 py-2.5">
-            {error}
-          </p>
-        )}
 
         {/* Acciones */}
         <div className="flex gap-3">
@@ -475,8 +468,8 @@ export default function EditBrandPage() {
             className="btn-accent flex-1 py-2.5"
           >
             {saving
-              ? <><CircleNotch className="w-4 h-4 animate-spin" /> Guardando...</>
-              : <><CheckCircle className="w-4 h-4" /> Guardar cambios</>
+              ? <><IconLoader2 size={15} className="animate-spin" /> Guardando...</>
+              : <><IconCircleCheck size={15} stroke={1.8} /> Guardar cambios</>
             }
           </button>
         </div>

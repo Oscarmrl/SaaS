@@ -2,7 +2,8 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { UploadSimple, X, CheckCircle, Sparkle, ArrowRight, CaretLeft, Coffee, ForkKnife, ShoppingBag, Briefcase } from '@phosphor-icons/react'
+import { IconUpload, IconX, IconCircleCheck, IconSparkles, IconArrowRight, IconChevronLeft, IconCoffee, IconToolsKitchen2, IconShoppingBag, IconBriefcase } from '@tabler/icons-react'
+import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase'
 import { api } from '@/lib/api-client'
 import type { BrandProfile } from '@brandai/shared'
@@ -20,11 +21,11 @@ interface Question {
 }
 
 const INDUSTRIES = [
-  { value: 'cafe'       as Industry, label: 'Café / Cafetería', Icon: Coffee      },
-  { value: 'restaurant' as Industry, label: 'Restaurante',      Icon: ForkKnife   },
-  { value: 'retail'     as Industry, label: 'Tienda / Retail',  Icon: ShoppingBag },
-  { value: 'services'   as Industry, label: 'Servicios',        Icon: Briefcase   },
-  { value: 'other'      as Industry, label: 'Otro negocio',     Icon: Sparkle     },
+  { value: 'cafe'       as Industry, label: 'Café / Cafetería', Icon: IconCoffee         },
+  { value: 'restaurant' as Industry, label: 'Restaurante',      Icon: IconToolsKitchen2  },
+  { value: 'retail'     as Industry, label: 'Tienda / Retail',  Icon: IconShoppingBag    },
+  { value: 'services'   as Industry, label: 'Servicios',        Icon: IconBriefcase      },
+  { value: 'other'      as Industry, label: 'Otro negocio',     Icon: IconSparkles       },
 ]
 
 const TONES = [
@@ -135,7 +136,6 @@ export function SmartBrandForm() {
   const [questionIndex, setQuestionIndex] = useState(0)
   const [answers,       setAnswers]       = useState<Record<string, unknown>>({})
   const [files,         setFiles]         = useState<File[]>([])
-  const [error,         setError]         = useState<string | null>(null)
   const [createdBrand,  setCreatedBrand]  = useState<BrandProfile | null>(null)
 
   const questions      = industry ? FLOWS[industry] : []
@@ -189,7 +189,6 @@ export function SmartBrandForm() {
   async function handleSubmit() {
     if (!industry) return
     setPhase('submitting')
-    setError(null)
 
     try {
       const supabase = createClient()
@@ -227,7 +226,7 @@ export function SmartBrandForm() {
       setCreatedBrand(brand)
       setPhase('done')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ocurrió un error al crear la marca')
+      toast.error(err instanceof Error ? err.message : 'Ocurrió un error al crear la marca')
       setPhase('questions')
     }
   }
@@ -258,14 +257,14 @@ export function SmartBrandForm() {
               onClick={() => selectIndustry(value)}
               className="
                 flex flex-col items-center gap-3 p-5 bg-white border border-[#E5E7EB]
-                rounded-[12px] hover:border-[#7C3AED] hover:bg-[#EDE9FE]/20
+                rounded-[12px] hover:border-[#09090B] hover:bg-[#F4F4F5]/20
                 transition-all duration-150 group text-center
               "
             >
-              <div className="w-10 h-10 rounded-[10px] bg-[#F1F3F5] flex items-center justify-center group-hover:bg-[#EDE9FE] transition-colors">
-                <Icon className="w-5 h-5 text-[#6B7280] group-hover:text-[#7C3AED] transition-colors" />
+              <div className="w-10 h-10 rounded-[10px] bg-[#F1F3F5] flex items-center justify-center group-hover:bg-[#F4F4F5] transition-colors">
+                <Icon className="w-5 h-5 text-[#6B7280] group-hover:text-[#09090B] transition-colors" />
               </div>
-              <span className="text-sm font-semibold text-[#0A0A0A] group-hover:text-[#7C3AED] transition-colors">{label}</span>
+              <span className="text-sm font-semibold text-[#0A0A0A] group-hover:text-[#09090B] transition-colors">{label}</span>
             </button>
           ))}
         </div>
@@ -277,8 +276,8 @@ export function SmartBrandForm() {
   if (phase === 'submitting') {
     return (
       <div className="max-w-[560px] mx-auto pt-16 flex flex-col items-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-[#EDE9FE] flex items-center justify-center">
-          <Sparkle className="w-7 h-7 text-[#7C3AED] animate-pulse" />
+        <div className="w-14 h-14 rounded-full bg-[#F4F4F5] flex items-center justify-center">
+          <IconSparkles size={28} stroke={1.5} className="text-[#09090B] animate-pulse" />
         </div>
         <h2 className="text-lg font-bold text-[#0A0A0A]">Creando tu marca...</h2>
         <p className="text-sm text-[#6B7280] text-center">
@@ -293,7 +292,7 @@ export function SmartBrandForm() {
     return (
       <div className="max-w-[560px] mx-auto pt-16 flex flex-col items-center gap-6 text-center">
         <div className="w-16 h-16 rounded-full bg-[#D1FAE5] flex items-center justify-center">
-          <CheckCircle className="w-8 h-8 text-[#10B981]" />
+          <IconCircleCheck size={32} stroke={1.5} className="text-[#16A34A]" />
         </div>
         <div>
           <h2 className="text-2xl font-bold text-[#0A0A0A]">¡Tu marca está lista!</h2>
@@ -324,9 +323,9 @@ export function SmartBrandForm() {
             onClick={() => router.push('/generate')}
             className="btn-accent flex-1"
           >
-            <Sparkle className="w-4 h-4" />
+            <IconSparkles size={15} stroke={1.8} />
             Generar contenido
-            <ArrowRight className="w-4 h-4" />
+            <IconArrowRight size={15} stroke={2} />
           </button>
           <button
             onClick={() => router.push('/brands')}
@@ -347,7 +346,7 @@ export function SmartBrandForm() {
       {/* Progress bar */}
       <div className="h-1 w-full bg-[#E5E7EB] rounded-full mb-8 overflow-hidden">
         <div
-          className="h-full bg-[#7C3AED] rounded-full transition-all duration-500"
+          className="h-full bg-[#09090B] rounded-full transition-all duration-500"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -388,8 +387,8 @@ export function SmartBrandForm() {
                     w-full text-left px-4 py-3 rounded-[10px] border text-sm font-medium
                     transition-all duration-150
                     ${active
-                      ? 'border-[#7C3AED] bg-[#EDE9FE] text-[#7C3AED]'
-                      : 'border-[#E5E7EB] bg-white text-[#0A0A0A] hover:border-[#7C3AED] hover:bg-[#EDE9FE]/20'}
+                      ? 'border-[#09090B] bg-[#F4F4F5] text-[#09090B]'
+                      : 'border-[#E5E7EB] bg-white text-[#0A0A0A] hover:border-[#09090B] hover:bg-[#F4F4F5]/20'}
                   `}
                 >
                   {option}
@@ -411,12 +410,12 @@ export function SmartBrandForm() {
                     text-left px-4 py-3 rounded-[10px] border text-sm font-medium
                     transition-all duration-150 flex items-center justify-between gap-2
                     ${selected
-                      ? 'border-[#7C3AED] bg-[#EDE9FE] text-[#7C3AED]'
-                      : 'border-[#E5E7EB] bg-white text-[#0A0A0A] hover:border-[#7C3AED] hover:bg-[#EDE9FE]/20'}
+                      ? 'border-[#09090B] bg-[#F4F4F5] text-[#09090B]'
+                      : 'border-[#E5E7EB] bg-white text-[#0A0A0A] hover:border-[#09090B] hover:bg-[#F4F4F5]/20'}
                   `}
                 >
                   {option}
-                  {selected && <CheckCircle className="w-4 h-4 flex-shrink-0" />}
+                  {selected && <IconCircleCheck size={15} stroke={1.8} className="flex-shrink-0" />}
                 </button>
               )
             })}
@@ -430,11 +429,11 @@ export function SmartBrandForm() {
               className="
                 w-full border-2 border-dashed border-[#D1D5DB] rounded-[12px]
                 p-8 flex flex-col items-center gap-3 text-center
-                hover:border-[#7C3AED] hover:bg-[#EDE9FE]/10 transition-all duration-150
+                hover:border-[#09090B] hover:bg-[#F4F4F5]/10 transition-all duration-150
               "
             >
               <div className="w-10 h-10 rounded-full bg-[#F1F3F5] flex items-center justify-center">
-                <UploadSimple className="w-5 h-5 text-[#6B7280]" />
+                <IconUpload size={20} stroke={1.5} className="text-[#71717A]" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-[#0A0A0A]">Haz clic para subir archivos</p>
@@ -453,12 +452,12 @@ export function SmartBrandForm() {
               <div className="space-y-2">
                 {files.map((file, i) => (
                   <div key={i} className="flex items-center gap-3 px-3 py-2 bg-white border border-[#E5E7EB] rounded-[8px]">
-                    <div className="w-8 h-8 rounded bg-[#EDE9FE] flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-bold text-[#7C3AED]">IMG</span>
+                    <div className="w-8 h-8 rounded bg-[#F4F4F5] flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-bold text-[#09090B]">IMG</span>
                     </div>
                     <span className="text-sm text-[#0A0A0A] flex-1 truncate">{file.name}</span>
                     <button onClick={() => removeFile(i)} className="text-[#9CA3AF] hover:text-[#EF4444] transition-colors">
-                      <X className="w-4 h-4" />
+                      <IconX size={15} stroke={2} />
                     </button>
                   </div>
                 ))}
@@ -468,14 +467,10 @@ export function SmartBrandForm() {
         )}
       </div>
 
-      {error && (
-        <p className="text-sm text-[#EF4444] mb-4 px-3 py-2 bg-red-50 rounded-[8px]">{error}</p>
-      )}
-
       {/* Navigation */}
       <div className="flex gap-3">
         <button onClick={handleBack} className="btn-outline px-4">
-          <CaretLeft className="w-4 h-4" />
+          <IconChevronLeft size={16} stroke={2} />
         </button>
         <button
           onClick={handleNext}
@@ -483,7 +478,7 @@ export function SmartBrandForm() {
           className="btn-accent flex-1"
         >
           {isLast ? 'Crear marca' : 'Siguiente'}
-          {!isLast && <ArrowRight className="w-4 h-4" />}
+          {!isLast && <IconArrowRight size={15} stroke={2} />}
         </button>
       </div>
     </div>

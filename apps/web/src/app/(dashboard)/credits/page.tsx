@@ -1,44 +1,23 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Lightning, CheckCircle, ArrowUpRight, ArrowDownLeft, Clock } from '@phosphor-icons/react'
+import { IconBolt, IconCircleCheck, IconArrowUpRight, IconArrowDownLeft, IconClock } from '@tabler/icons-react'
 import { api } from '@/lib/api-client'
 import { CREDIT_PACKS } from '@brandai/shared'
 
-interface CreditAccount {
-  balance:         number
-  lifetimeCredits: number
-}
-
+interface CreditAccount { balance: number; lifetimeCredits: number }
 interface Transaction {
-  id:          string
-  amount:      number
-  type:        'PURCHASE' | 'SPEND' | 'REFUND' | 'BONUS'
-  description: string
-  createdAt:   string
+  id: string; amount: number; type: 'PURCHASE' | 'SPEND' | 'REFUND' | 'BONUS'
+  description: string; createdAt: string
 }
-
-interface TransactionPage {
-  data:     Transaction[]
-  total:    number
-  page:     number
-  pageSize: number
-}
-
+interface TransactionPage { data: Transaction[]; total: number; page: number; pageSize: number }
 type Pack = 'SEED' | 'BUSINESS' | 'PRO' | 'AGENCY'
 
 const PACK_DETAILS: Record<Pack, { label: string; popular?: boolean; features: string[] }> = {
-  SEED:     { label: 'Seed',     features: ['80 créditos',  '8 imágenes',   '26 banners',   '26 captions'] },
-  BUSINESS: { label: 'Business', popular: true, features: ['220 créditos', '22 imágenes',  '27 banners',   '73 captions'] },
-  PRO:      { label: 'Pro',      features: ['500 créditos', '50 imágenes',  '62 banners',   '166 captions'] },
-  AGENCY:   { label: 'Agency',   features: ['1300 créditos','130 imágenes', '162 banners',  '433 captions'] },
-}
-
-function TransactionIcon({ type }: { type: Transaction['type'] }) {
-  if (type === 'PURCHASE' || type === 'BONUS' || type === 'REFUND') {
-    return <ArrowUpRight className="w-3.5 h-3.5 text-[#10B981]" />
-  }
-  return <ArrowDownLeft className="w-3.5 h-3.5 text-[#6B7280]" />
+  SEED:     { label: 'Seed',     features: ['80 créditos',   '8 imágenes',  '26 banners',  '26 captions'] },
+  BUSINESS: { label: 'Business', popular: true, features: ['220 créditos', '22 imágenes', '27 banners',  '73 captions'] },
+  PRO:      { label: 'Pro',      features: ['500 créditos',  '50 imágenes', '62 banners',  '166 captions'] },
+  AGENCY:   { label: 'Agency',   features: ['1300 créditos', '130 imágenes','162 banners', '433 captions'] },
 }
 
 export default function CreditsPage() {
@@ -48,114 +27,82 @@ export default function CreditsPage() {
   const [buying,       setBuying]       = useState<Pack | null>(null)
 
   useEffect(() => {
-    api.get<CreditAccount>('/credits/balance')
-      .then(setAccount)
-      .finally(() => setLoadingAcct(false))
-
-    api.get<TransactionPage>('/credits/history')
-      .then(res => setTransactions(res.data))
-      .catch(() => {})
+    api.get<CreditAccount>('/credits/balance').then(setAccount).finally(() => setLoadingAcct(false))
+    api.get<TransactionPage>('/credits/history').then(res => setTransactions(res.data)).catch(() => {})
   }, [])
 
   async function handleBuy(pack: Pack) {
     setBuying(pack)
     try {
-      // Creates a pending PayPal order
-      const order = await api.post<{ orderId: string; approvalUrl: string }>(
-        '/credits/prepare-order',
-        { pack }
-      )
-      // Redirect to PayPal approval page
+      const order = await api.post<{ orderId: string; approvalUrl: string }>('/credits/prepare-order', { pack })
       window.location.href = order.approvalUrl
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Error al iniciar el pago')
-    } finally {
-      setBuying(null)
-    }
+    } finally { setBuying(null) }
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#0A0A0A]">Créditos</h1>
-        <p className="text-sm text-[#6B7280] mt-1">Compra créditos para generar contenido con IA</p>
+    <div className="animate-fade-in">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Créditos</h1>
+          <p className="page-subtitle">Compra créditos para generar contenido con IA</p>
+        </div>
       </div>
 
-      {/* Balance card */}
-      <div className="card-featured p-6 mb-8 flex items-center justify-between">
-        <div>
-          <p className="text-[#9CA3AF] text-xs mb-1">Créditos disponibles</p>
+      {/* Balance */}
+      <div className="card mb-7 p-6 flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="section-label mb-2">Créditos disponibles</p>
           {loadingAcct
             ? <div className="h-10 w-32 skeleton rounded" />
-            : <p className="text-4xl font-bold text-white">{account?.balance ?? 0}</p>
+            : <p className="text-3xl sm:text-4xl font-bold text-[#09090B] tracking-tight tabular-nums">{account?.balance ?? 0}</p>
           }
-          <p className="text-[#9CA3AF] text-xs mt-1">
-            {account?.lifetimeCredits ?? 0} créditos comprados en total
-          </p>
+          <p className="text-xs text-[#71717A] mt-1">{account?.lifetimeCredits ?? 0} créditos comprados en total</p>
         </div>
-        <div className="w-14 h-14 rounded-full bg-[#7C3AED]/30 flex items-center justify-center">
-          <Lightning className="w-7 h-7 text-[#7C3AED]" />
+        <div className="w-12 h-12 rounded-full bg-[#F4F4F5] flex items-center justify-center flex-shrink-0">
+          <IconBolt size={22} stroke={1.6} className="text-[#09090B]" />
         </div>
       </div>
 
       {/* Packs */}
-      <h2 className="text-base font-semibold text-[#0A0A0A] mb-4">Packs de créditos</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      <p className="text-xs font-semibold text-[#3F3F46] uppercase tracking-wide mb-4">Packs de créditos</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
         {(Object.entries(CREDIT_PACKS) as [Pack, { credits: number; priceUsd: number }][]).map(([pack, { credits, priceUsd }]) => {
-          const detail  = PACK_DETAILS[pack]
+          const detail   = PACK_DETAILS[pack]
           const isBuying = buying === pack
 
-          if (detail.popular) {
-            return (
-              <div key={pack} className="card-featured flex flex-col gap-4 relative">
-                <div className="pill-accent text-[10px] self-start">Popular</div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">{detail.label}</h3>
-                  <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-3xl font-bold text-white">${priceUsd}</span>
-                    <span className="text-[#9CA3AF] text-xs">USD</span>
-                  </div>
-                </div>
-                <ul className="space-y-1.5 flex-1">
-                  {detail.features.map(f => (
-                    <li key={f} className="flex items-center gap-2 text-xs text-[#D1D5DB]">
-                      <CheckCircle className="w-3.5 h-3.5 text-[#7C3AED] flex-shrink-0" /> {f}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => handleBuy(pack)}
-                  disabled={isBuying}
-                  className="w-full py-2.5 bg-white text-[#0A0A0A] text-xs font-semibold rounded-[8px] hover:bg-[#F8F9FA] transition-all duration-150 disabled:opacity-60"
-                >
-                  {isBuying ? 'Procesando...' : `Comprar — $${priceUsd} USD`}
-                </button>
-              </div>
-            )
-          }
-
           return (
-            <div key={pack} className="card flex flex-col gap-4">
+            <div key={pack} className={`relative flex flex-col gap-4 p-5 rounded-[12px] border transition-all ${
+              detail.popular ? 'card-featured' : 'border-[#E4E4E7] bg-white hover:border-[#D4D4D8]'
+            }`}>
+              {detail.popular && (
+                <span className="absolute -top-2.5 right-4 bg-white text-[#09090B] text-[9px] font-bold px-2.5 py-0.5 rounded-full tracking-widest uppercase">
+                  Popular
+                </span>
+              )}
+
               <div>
-                <h3 className="text-base font-semibold text-[#0A0A0A]">{detail.label}</h3>
+                <h3 className={`font-bold text-lg tracking-tight ${detail.popular ? 'text-white' : 'text-[#09090B]'}`}>{detail.label}</h3>
                 <div className="flex items-baseline gap-1 mt-1">
-                  <span className="text-3xl font-bold text-[#0A0A0A]">${priceUsd}</span>
-                  <span className="text-[#6B7280] text-xs">USD</span>
+                  <span className={`text-3xl font-bold tracking-tight ${detail.popular ? 'text-white' : 'text-[#09090B]'}`}>${priceUsd}</span>
+                  <span className={`text-xs ${detail.popular ? 'text-[#52525B]' : 'text-[#71717A]'}`}>USD</span>
                 </div>
               </div>
+
               <ul className="space-y-1.5 flex-1">
                 {detail.features.map(f => (
-                  <li key={f} className="flex items-center gap-2 text-xs text-[#6B7280]">
-                    <CheckCircle className="w-3.5 h-3.5 text-[#10B981] flex-shrink-0" /> {f}
+                  <li key={f} className="flex items-center gap-2 text-xs">
+                    <IconCircleCheck size={13} stroke={1.8} className={detail.popular ? 'text-[#71717A]' : 'text-[#09090B]'} />
+                    <span className={detail.popular ? 'text-[#52525B]' : 'text-[#71717A]'}>{f}</span>
                   </li>
                 ))}
               </ul>
-              <button
-                onClick={() => handleBuy(pack)}
-                disabled={isBuying}
-                className="btn-primary text-xs py-2 w-full disabled:opacity-60"
-              >
+
+              <button onClick={() => handleBuy(pack)} disabled={isBuying}
+                className={`w-full py-2.5 text-xs font-semibold rounded-[8px] transition-colors disabled:opacity-60 ${
+                  detail.popular ? 'bg-white text-[#09090B] hover:bg-[#F4F4F5]' : 'btn-primary'
+                }`}>
                 {isBuying ? 'Procesando...' : `Comprar — $${priceUsd} USD`}
               </button>
             </div>
@@ -163,34 +110,34 @@ export default function CreditsPage() {
         })}
       </div>
 
-      {/* Transaction history */}
+      {/* History */}
       <div className="card">
-        <h2 className="text-sm font-semibold text-[#0A0A0A] mb-4">Historial de créditos</h2>
+        <p className="text-xs font-semibold text-[#3F3F46] uppercase tracking-wide mb-5">Historial</p>
 
         {transactions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <Clock className="w-7 h-7 text-[#9CA3AF] mb-2" />
-            <p className="text-xs text-[#6B7280]">Sin transacciones todavía</p>
+          <div className="flex flex-col items-center justify-center py-10 text-center gap-2">
+            <IconClock size={22} stroke={1.5} className="text-[#A1A1AA]" />
+            <p className="text-xs text-[#71717A]">Sin transacciones todavía</p>
           </div>
         ) : (
-          <div className="divide-y divide-[#E5E7EB]">
+          <div className="divide-y divide-[#F4F4F5]">
             {transactions.map(tx => (
               <div key={tx.id} className="flex items-center justify-between py-3">
                 <div className="flex items-center gap-3">
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center
-                    ${tx.amount > 0 ? 'bg-green-50' : 'bg-[#F1F3F5]'}`}>
-                    <TransactionIcon type={tx.type} />
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center ${tx.amount > 0 ? 'bg-[#F0FDF4]' : 'bg-[#F4F4F5]'}`}>
+                    {tx.amount > 0
+                      ? <IconArrowUpRight size={14} stroke={2} className="text-[#16A34A]" />
+                      : <IconArrowDownLeft size={14} stroke={2} className="text-[#71717A]" />
+                    }
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-[#0A0A0A]">{tx.description}</p>
-                    <p className="text-[10px] text-[#9CA3AF]">
-                      {new Date(tx.createdAt).toLocaleDateString('es-MX', {
-                        day: '2-digit', month: 'short', year: 'numeric'
-                      })}
+                    <p className="text-xs font-medium text-[#09090B]">{tx.description}</p>
+                    <p className="text-[10px] text-[#A1A1AA] mt-0.5">
+                      {new Date(tx.createdAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </p>
                   </div>
                 </div>
-                <span className={`text-sm font-semibold ${tx.amount > 0 ? 'text-[#10B981]' : 'text-[#0A0A0A]'}`}>
+                <span className={`text-sm font-semibold tabular-nums ${tx.amount > 0 ? 'text-[#16A34A]' : 'text-[#09090B]'}`}>
                   {tx.amount > 0 ? '+' : ''}{tx.amount}
                 </span>
               </div>
