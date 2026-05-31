@@ -105,13 +105,12 @@ export function FanCarousel() {
   }, [])
 
   return (
-    <div className="relative w-full h-[200px] sm:h-[320px] lg:h-[440px] overflow-visible">
+    <div className="relative w-full h-[180px] sm:h-[270px] lg:h-[340px] overflow-visible">
       {CARDS.map((card, i) => (
         <div
           key={i}
           ref={el => { refs.current[i] = el }}
-          // ← Tarjetas más pequeñas en móvil
-          className="absolute bottom-0 w-[80px] sm:w-[165px] lg:w-[225px] h-[115px] sm:h-[235px] lg:h-[320px] rounded-[10px] sm:rounded-[18px] lg:rounded-[20px] overflow-hidden shadow-lg sm:shadow-2xl"
+          className="absolute bottom-0 w-[72px] sm:w-[140px] lg:w-[190px] h-[105px] sm:h-[200px] lg:h-[265px] rounded-[10px] sm:rounded-[16px] lg:rounded-[18px] overflow-hidden shadow-lg sm:shadow-2xl"
           style={{ transformOrigin: 'bottom center', willChange: 'transform' }}
         >
           <img
