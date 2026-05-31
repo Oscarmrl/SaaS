@@ -4,9 +4,12 @@ import type { CreditPack } from '@brandai/shared'
 import { CREDIT_PACKS } from '@brandai/shared'
 
 export async function getBalance(userId: string): Promise<{ balance: number; lifetimeCredits: number }> {
-  const account = await prisma.creditAccount.findUnique({ where: { userId } })
+  const account = await prisma.creditAccount.findUnique({
+    where:  { userId },
+    select: { balance: true, lifetimeCredits: true },
+  })
   if (!account) throw new NotFoundError('CreditAccount')
-  return { balance: account.balance, lifetimeCredits: account.lifetimeCredits }
+  return account
 }
 
 export async function getTransactionHistory(
@@ -16,10 +19,11 @@ export async function getTransactionHistory(
 ) {
   const [data, total] = await Promise.all([
     prisma.creditTransaction.findMany({
-      where: { userId },
+      where:   { userId },
       orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      skip:    (page - 1) * pageSize,
+      take:    pageSize,
+      select:  { id: true, amount: true, type: true, description: true, createdAt: true },
     }),
     prisma.creditTransaction.count({ where: { userId } }),
   ])

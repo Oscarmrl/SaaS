@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Sparkle, Image, FileText, VideoCamera, CheckCircle, XCircle, CircleNotch, Lightning, ShoppingCart, DownloadSimple, Trash, ArrowsOut } from '@phosphor-icons/react'
+import { IconSparkles, IconPhoto, IconFileText, IconVideo, IconCircleCheck, IconCircleX, IconLoader2, IconBolt, IconShoppingCart, IconDownload, IconTrash, IconArrowsMaximize, IconInfoCircle, IconMovie } from '@tabler/icons-react'
+import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { api } from '@/lib/api-client'
 import { useUser } from '@/contexts/UserContext'
@@ -23,11 +24,11 @@ interface Job {
 }
 
 const ASSET_TYPES = [
-  { value: 'IMAGE'    as AssetType, label: 'Imagen',    icon: Image,    credits: 10, desc: 'Foto publicitaria con IA' },
-  { value: 'BANNER'   as AssetType, label: 'Banner',    icon: Sparkle, credits:  8, desc: 'Banner para redes sociales' },
-  { value: 'CAPTION'  as AssetType, label: 'Caption',   icon: FileText, credits:  3, desc: 'Texto persuasivo con IA' },
-  { value: 'VIDEO_15S'as AssetType, label: 'Video 15s', icon: VideoCamera,    credits: 20, desc: 'Mini-video animado' },
-  { value: 'VIDEO_30S'as AssetType, label: 'Video 30s', icon: VideoCamera,    credits: 35, desc: 'Video publicitario largo' },
+  { value: 'IMAGE'    as AssetType, label: 'Imagen',    icon: IconPhoto,    credits: 10, desc: 'Foto publicitaria con IA' },
+  { value: 'BANNER'   as AssetType, label: 'Banner',    icon: IconSparkles, credits:  8, desc: 'Banner para redes sociales' },
+  { value: 'CAPTION'  as AssetType, label: 'Caption',   icon: IconFileText, credits:  3, desc: 'Texto persuasivo con IA' },
+  { value: 'VIDEO_15S'as AssetType, label: 'Video 15s', icon: IconVideo,    credits: 20, desc: 'Mini-video animado' },
+  { value: 'VIDEO_30S'as AssetType, label: 'Video 30s', icon: IconVideo,    credits: 35, desc: 'Video publicitario largo' },
 ]
 
 const PLATFORMS = [
@@ -37,12 +38,32 @@ const PLATFORMS = [
   { value: 'all'       as Platform, label: 'Todas'     },
 ]
 
+const VIDEO_MESSAGES = [
+  { at:   0, text: 'Generando el guion y la narración con IA...' },
+  { at:   8, text: 'Iniciando el motor de renderizado...' },
+  { at:  16, text: 'Renderizando los frames con animaciones HTML/CSS...' },
+  { at:  30, text: 'Cada frame se procesa individualmente, como una película.' },
+  { at:  48, text: 'Generando la voz profesional con ElevenLabs...' },
+  { at:  65, text: 'Fusionando video y audio con FFmpeg...' },
+  { at:  85, text: 'Subiendo el video a la nube...' },
+  { at: 110, text: 'Tomando un poco más de lo habitual, ya casi...' },
+  { at: 150, text: '¡Sigue ahí! Terminando los últimos detalles.' },
+]
+
+const VIDEO_PHASES = [
+  { label: 'Guion con IA',   from:   0, to:  15 },
+  { label: 'Renderizado',    from:  15, to:  65 },
+  { label: 'Voz con IA',     from:  65, to:  85 },
+  { label: 'Mezcla final',   from:  85, to: 110 },
+  { label: 'Subiendo',       from: 110, to: 999 },
+]
+
 function NoCreditsPanel({ balance, required }: { balance: number; required: number }) {
   return (
     <div className="rounded-[12px] border border-[#FDE68A] bg-[#FFFBEB] p-5 space-y-3">
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 rounded-[8px] bg-[#FEF3C7] flex items-center justify-center flex-shrink-0">
-          <Lightning className="w-4 h-4 text-[#D97706]" />
+          <IconBolt size={16} stroke={1.8} className="text-[#D97706]" />
         </div>
         <p className="text-sm font-semibold text-[#92400E]">Créditos insuficientes</p>
       </div>
@@ -52,9 +73,9 @@ function NoCreditsPanel({ balance, required }: { balance: number; required: numb
       </p>
       <Link
         href="/credits"
-        className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#7C3AED] text-white text-xs font-semibold rounded-[8px] hover:bg-[#6D28D9] transition-all duration-150"
+        className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#09090B] text-white text-xs font-semibold rounded-[8px] hover:bg-[#18181B] transition-all duration-150"
       >
-        <ShoppingCart className="w-3.5 h-3.5" />
+        <IconShoppingCart size={14} stroke={1.8} />
         Comprar créditos
       </Link>
     </div>
@@ -78,13 +99,17 @@ function GenerateForm() {
   const [discarding,   setDiscarding]   = useState(false)
   const [previewOpen,  setPreviewOpen]  = useState(false)
   const [captionText,  setCaptionText]  = useState<string | null>(null)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const intervalRef     = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [videoMsgIdx,   setVideoMsgIdx]   = useState(0)
+  const [elapsedSecs,   setElapsedSecs]   = useState(0)
+  const videoTimersRef  = useRef<ReturnType<typeof setTimeout>[]>([])
+  const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // Cuando un caption termina, obtener el texto del archivo .txt
+  // Cuando un caption termina, obtener el texto via proxy (evita CORS de R2)
   useEffect(() => {
     if (job?.status === 'COMPLETED' && job.type === 'CAPTION' && job.generatedAsset?.url) {
-      fetch(job.generatedAsset.url)
-        .then(r => r.text())
+      fetch(`/api/caption?url=${encodeURIComponent(job.generatedAsset.url)}`)
+        .then(r => r.ok ? r.text() : Promise.reject(r.status))
         .then(setCaptionText)
         .catch(() => setCaptionText(null))
     } else {
@@ -115,23 +140,47 @@ function GenerateForm() {
   const requiredCredits     = selectedType?.credits ?? 0
   const hasEnoughCredits    = credits.balance >= requiredCredits
 
+  function startVideoMessages() {
+    videoTimersRef.current.forEach(clearTimeout)
+    videoTimersRef.current = []
+    if (elapsedTimerRef.current) clearInterval(elapsedTimerRef.current)
+    setVideoMsgIdx(0)
+    setElapsedSecs(0)
+    VIDEO_MESSAGES.forEach(({ at }, idx) => {
+      if (idx === 0) return
+      const id = setTimeout(() => setVideoMsgIdx(idx), at * 1000)
+      videoTimersRef.current.push(id)
+    })
+    elapsedTimerRef.current = setInterval(() => setElapsedSecs(s => s + 1), 1000)
+  }
+
+  function stopVideoMessages() {
+    videoTimersRef.current.forEach(clearTimeout)
+    videoTimersRef.current = []
+    if (elapsedTimerRef.current) { clearInterval(elapsedTimerRef.current); elapsedTimerRef.current = null }
+  }
+
   useEffect(() => {
     api.get<BrandProfile[]>('/brands').then(setBrands).catch(() => {})
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      stopVideoMessages()
+    }
   }, [])
 
   const stopPolling = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
-    }
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
+    stopVideoMessages()
     setPolling(false)
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const pollJob = useCallback((jobId: string) => {
+  const pollJob = useCallback((jobId: string, isVideo: boolean) => {
     setPolling(true)
-    let attempts = 0
-    const MAX_ATTEMPTS = 80
+    let attempts   = 0
+    // Images/captions: poll every 2s for 60s (30 attempts)
+    // Videos: poll every 4s for 4min (60 attempts) — they take much longer
+    const INTERVAL     = isVideo ? 4000 : 2000
+    const MAX_ATTEMPTS = isVideo ? 60   : 30
 
     intervalRef.current = setInterval(async () => {
       attempts++
@@ -152,7 +201,7 @@ function GenerateForm() {
       } catch {
         stopPolling()
       }
-    }, 2500)
+    }, INTERVAL)
   }, [stopPolling, refreshCredits])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -173,13 +222,16 @@ function GenerateForm() {
         userPrompt: userPrompt.trim(),
         platform,
       })
+      const isVideo = assetType === 'VIDEO_15S' || assetType === 'VIDEO_30S'
       setJob(created)
-      pollJob(created.id)
+      pollJob(created.id, isVideo)
+      if (isVideo) startVideoMessages()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al generar el contenido'
-      // El API devuelve "Insufficient credits" cuando no hay saldo
       if (msg.toLowerCase().includes('credit') || msg.toLowerCase().includes('crédito')) {
-        refreshCredits() // sincroniza el balance real
+        refreshCredits()
+      } else {
+        toast.error(msg)
       }
       setError(msg)
     } finally {
@@ -235,14 +287,14 @@ function GenerateForm() {
                     flex flex-col gap-2 p-3 rounded-[10px] border text-left
                     transition-all duration-150
                     ${active
-                      ? 'border-[#7C3AED] bg-[#EDE9FE]'
-                      : 'border-[#E5E7EB] bg-white hover:border-[#7C3AED] hover:bg-[#EDE9FE]/20'}
+                      ? 'border-[#09090B] bg-[#F4F4F5]'
+                      : 'border-[#E5E7EB] bg-white hover:border-[#09090B] hover:bg-[#F4F4F5]/20'}
                   `}
                 >
-                  <div className={`w-8 h-8 rounded-[8px] flex items-center justify-center ${active ? 'bg-[#7C3AED]' : 'bg-[#F1F3F5]'}`}>
+                  <div className={`w-8 h-8 rounded-[8px] flex items-center justify-center ${active ? 'bg-[#09090B]' : 'bg-[#F1F3F5]'}`}>
                     <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-[#6B7280]'}`} />
                   </div>
-                  <span className={`text-xs font-semibold ${active ? 'text-[#7C3AED]' : 'text-[#0A0A0A]'}`}>{label}</span>
+                  <span className={`text-xs font-semibold ${active ? 'text-[#09090B]' : 'text-[#0A0A0A]'}`}>{label}</span>
                   <span className={`pill text-[10px] ${credits.balance < cost ? 'bg-red-50 text-red-500' : ''}`}>
                     {cost} créditos
                   </span>
@@ -265,7 +317,7 @@ function GenerateForm() {
                 type="button"
                 onClick={() => setPlatform(value)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-150
-                  ${platform === value ? 'bg-[#EDE9FE] text-[#7C3AED]' : 'bg-[#F1F3F5] text-[#374151] hover:bg-[#EDE9FE]/50'}`}
+                  ${platform === value ? 'bg-[#F4F4F5] text-[#09090B]' : 'bg-[#F1F3F5] text-[#374151] hover:bg-[#F4F4F5]/50'}`}
               >
                 {label}
               </button>
@@ -288,14 +340,6 @@ function GenerateForm() {
           </p>
         </div>
 
-        {/* Error genérico del API */}
-        {error && !error.toLowerCase().includes('credit') && (
-          <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-[8px] px-3 py-2.5">
-            <XCircle className="w-4 h-4 flex-shrink-0 mt-px" />
-            {error}
-          </div>
-        )}
-
         {/* Botón — cambia según créditos */}
         {hasEnoughCredits ? (
           <button
@@ -304,8 +348,8 @@ function GenerateForm() {
             className="btn-accent w-full py-3"
           >
             {loading || polling
-              ? <><CircleNotch className="w-4 h-4 animate-spin" /> Generando...</>
-              : <><Sparkle className="w-4 h-4" /> Generar — {requiredCredits} créditos</>
+              ? <><IconLoader2 size={15} className="animate-spin" /> Generando...</>
+              : <><IconSparkles size={15} stroke={1.8} /> Generar — {requiredCredits} créditos</>
             }
           </button>
         ) : (
@@ -323,7 +367,7 @@ function GenerateForm() {
           {!job && !error && (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <div className="w-12 h-12 rounded-full bg-[#F1F3F5] flex items-center justify-center mb-3">
-                <Sparkle className="w-5 h-5 text-[#9CA3AF]" />
+                <IconSparkles size={20} stroke={1.5} className="text-[#A1A1AA]" />
               </div>
               <p className="text-xs text-[#6B7280]">El resultado aparecerá aquí</p>
             </div>
@@ -336,14 +380,15 @@ function GenerateForm() {
 
           {job && (
             <div className="space-y-3">
+              {/* Badge de estado */}
               <div className={`flex items-center gap-2 px-3 py-2 rounded-[8px] text-xs font-medium
                 ${job.status === 'COMPLETED' ? 'bg-green-50 text-green-700'  : ''}
                 ${job.status === 'FAILED'    ? 'bg-red-50   text-red-700'    : ''}
-                ${job.status === 'PENDING' || job.status === 'PROCESSING' ? 'bg-[#EDE9FE] text-[#7C3AED]' : ''}
+                ${job.status === 'PENDING' || job.status === 'PROCESSING' ? 'bg-[#F4F4F5] text-[#09090B]' : ''}
               `}>
-                {job.status === 'COMPLETED'  && <CheckCircle className="w-4 h-4" />}
-                {job.status === 'FAILED'     && <XCircle     className="w-4 h-4" />}
-                {(job.status === 'PENDING' || job.status === 'PROCESSING') && <CircleNotch className="w-4 h-4 animate-spin" />}
+                {job.status === 'COMPLETED'  && <IconCircleCheck size={15} stroke={1.8} />}
+                {job.status === 'FAILED'     && <IconCircleX     size={15} stroke={1.8} />}
+                {(job.status === 'PENDING' || job.status === 'PROCESSING') && <IconLoader2 size={15} className="animate-spin" />}
                 {{
                   PENDING:    'En cola...',
                   PROCESSING: 'Generando con IA...',
@@ -351,6 +396,69 @@ function GenerateForm() {
                   FAILED:     'Error en generación',
                 }[job.status]}
               </div>
+
+              {/* Panel explicativo para videos en progreso */}
+              {(job.status === 'PENDING' || job.status === 'PROCESSING') &&
+               (job.type === 'VIDEO_15S' || job.type === 'VIDEO_30S') && (
+                <div className="space-y-2.5">
+
+                  {/* Paso actual animado */}
+                  <div className="rounded-[10px] border border-[#E4E4E7] bg-[#FAFAFA] p-4 space-y-3">
+                    <div className="flex items-start gap-2.5">
+                      <IconMovie size={15} stroke={1.7} className="text-[#09090B] flex-shrink-0 mt-0.5" />
+                      <p className="text-xs font-medium text-[#09090B] leading-relaxed">
+                        {VIDEO_MESSAGES[videoMsgIdx]?.text}
+                      </p>
+                    </div>
+
+                    {/* Barra de progreso basada en tiempo */}
+                    <div>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-[10px] text-[#A1A1AA]">
+                          {elapsedSecs < 60
+                            ? `${elapsedSecs}s transcurridos`
+                            : `${Math.floor(elapsedSecs / 60)}m ${elapsedSecs % 60}s transcurridos`}
+                        </span>
+                        <span className="text-[10px] text-[#A1A1AA]">
+                          {job.type === 'VIDEO_15S' ? 'aprox. 1–3 min' : 'aprox. 2–4 min'}
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-[#E4E4E7] rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-[#09090B] rounded-full transition-all duration-1000 ease-linear"
+                          style={{ width: `${Math.min(elapsedSecs / (job.type === 'VIDEO_15S' ? 200 : 260) * 100, 93)}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Fases */}
+                    <div className="flex gap-1 flex-wrap">
+                      {VIDEO_PHASES.map(phase => {
+                        const done    = elapsedSecs >= phase.to && phase.to !== 999
+                        const active  = elapsedSecs >= phase.from && elapsedSecs < phase.to
+                        return (
+                          <span key={phase.label} className={`
+                            text-[9px] font-medium px-2 py-0.5 rounded-full transition-all duration-500
+                            ${done   ? 'bg-[#09090B] text-white'        : ''}
+                            ${active ? 'bg-[#F4F4F5] text-[#09090B] ring-1 ring-[#09090B]' : ''}
+                            ${!done && !active ? 'bg-[#F4F4F5] text-[#A1A1AA]' : ''}
+                          `}>
+                            {done ? '✓ ' : ''}{phase.label}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Nota técnica */}
+                  <div className="flex items-start gap-2 px-3 py-2.5 rounded-[8px] border border-[#E4E4E7] bg-white">
+                    <IconInfoCircle size={13} stroke={1.7} className="text-[#A1A1AA] flex-shrink-0 mt-px" />
+                    <p className="text-[10px] text-[#71717A] leading-relaxed">
+                      Los videos se renderizan <span className="font-semibold text-[#3F3F46]">frame a frame</span> con animaciones HTML/CSS — como una película digital. Esto garantiza calidad perfecta en cada fotograma.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {job.status === 'FAILED' && job.errorMessage && (
                 <p className="text-xs text-[#EF4444]">{job.errorMessage}</p>
@@ -408,7 +516,7 @@ function GenerateForm() {
                       {/* Overlay "Ver en grande" */}
                       <div className="absolute inset-0 bg-black/0 group-hover/prev:bg-black/30 transition-colors duration-150 flex items-center justify-center">
                         <div className="opacity-0 group-hover/prev:opacity-100 transition-opacity duration-150 flex items-center gap-1.5 bg-black/70 text-white text-xs font-semibold px-3 py-1.5 rounded-full">
-                          <ArrowsOut className="w-3.5 h-3.5" />
+                          <IconArrowsMaximize size={14} stroke={1.8} />
                           Ver en grande
                         </div>
                       </div>
@@ -419,9 +527,9 @@ function GenerateForm() {
                       <button
                         type="button"
                         onClick={() => handleDownload(job.generatedAsset!.url)}
-                        className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-[8px] bg-[#7C3AED] text-white text-xs font-semibold hover:bg-[#6D28D9] transition-all duration-150"
+                        className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-[8px] bg-[#09090B] text-white text-xs font-semibold hover:bg-[#18181B] transition-all duration-150"
                       >
-                        <DownloadSimple className="w-3.5 h-3.5" />
+                        <IconDownload size={14} stroke={2} />
                         Descargar
                       </button>
 
@@ -432,8 +540,8 @@ function GenerateForm() {
                         className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-[8px] border border-[#E5E7EB] text-[#6B7280] text-xs font-semibold hover:bg-[#F1F3F5] hover:text-[#EF4444] hover:border-[#EF4444] transition-all duration-150 disabled:opacity-60"
                       >
                         {discarding
-                          ? <CircleNotch className="w-3.5 h-3.5 animate-spin" />
-                          : <Trash className="w-3.5 h-3.5" />
+                          ? <IconLoader2 size={14} className="animate-spin" />
+                          : <IconTrash size={14} stroke={1.8} className="w-3.5 h-3.5" />
                         }
                         {discarding ? 'Eliminando…' : 'Descartar'}
                       </button>
@@ -441,7 +549,7 @@ function GenerateForm() {
 
                     <p className="text-[10px] text-[#9CA3AF] text-center">
                       El asset queda guardado en{' '}
-                      <a href="/assets" className="text-[#7C3AED] hover:underline">Mis assets</a>
+                      <a href="/assets" className="text-[#09090B] hover:underline">Mis assets</a>
                     </p>
                   </div>
                 </>
@@ -453,7 +561,7 @@ function GenerateForm() {
         {/* Costos de referencia */}
         <div className="card-featured p-5">
           <div className="flex items-center gap-2 mb-2">
-            <Lightning className="w-4 h-4 text-[#7C3AED]" />
+            <IconBolt size={15} stroke={1.8} className="text-[#09090B]" />
             <span className="text-xs font-semibold text-white">Costos de créditos</span>
           </div>
           <div className="space-y-1.5 mt-3">
@@ -480,10 +588,12 @@ function GenerateForm() {
 
 export default function GeneratePage() {
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#0A0A0A]">Generar contenido</h1>
-        <p className="text-sm text-[#6B7280] mt-1">Crea imágenes, banners, captions y videos con IA</p>
+    <div className="animate-fade-in">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Generar contenido</h1>
+          <p className="page-subtitle">Crea imágenes, banners, captions y videos con IA</p>
+        </div>
       </div>
       <Suspense>
         <GenerateForm />
