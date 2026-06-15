@@ -4,15 +4,15 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  IconChartBar, IconUsers, IconCreditCard, IconStack2, IconShieldLock, IconLoader2,
+  IconChartBar, IconUsers, IconCreditCard, IconShieldLock, IconLoader2, IconFlag,
 } from '@tabler/icons-react'
 import { api } from '@/lib/api-client'
 
 const TABS = [
-  { href: '/admin',          icon: IconChartBar,   label: 'Resumen'       },
-  { href: '/admin/users',    icon: IconUsers,      label: 'Usuarios'      },
-  { href: '/admin/payments', icon: IconCreditCard, label: 'Pagos'         },
-  { href: '/admin/jobs',     icon: IconStack2,     label: 'Generaciones'  },
+  { href: '/admin',          icon: IconChartBar,   label: 'Resumen'  },
+  { href: '/admin/users',    icon: IconUsers,      label: 'Usuarios' },
+  { href: '/admin/payments', icon: IconCreditCard, label: 'Pagos'    },
+  { href: '/admin/reports',  icon: IconFlag,       label: 'Reportes' },
 ]
 
 type Access = 'loading' | 'granted' | 'denied'

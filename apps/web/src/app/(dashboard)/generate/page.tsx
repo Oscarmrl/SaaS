@@ -2,17 +2,21 @@
 
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { IconSparkles, IconPhoto, IconFileText, IconVideo, IconCircleCheck, IconCircleX, IconLoader2, IconBolt, IconShoppingCart, IconDownload, IconTrash, IconArrowsMaximize, IconInfoCircle, IconMovie } from '@tabler/icons-react'
+import { IconSparkles, IconPhoto, IconFileText, IconVideo, IconCircleCheck, IconCircleX, IconLoader2, IconBolt, IconShoppingCart, IconDownload, IconTrash, IconArrowsMaximize, IconInfoCircle, IconMovie, IconFlag } from '@tabler/icons-react'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { api } from '@/lib/api-client'
 import { useUser } from '@/contexts/UserContext'
 import { AssetPreviewModal } from '@/components/dashboard/AssetPreviewModal'
+import { CREDIT_COSTS } from '@brandai/shared'
 import type { BrandProfile } from '@brandai/shared'
 
-type AssetType = 'IMAGE' | 'BANNER' | 'VIDEO_15S' | 'VIDEO_30S' | 'CAPTION'
+type AssetType = 'IMAGE' | 'BANNER' | 'VIDEO_8S' | 'VIDEO_15S' | 'VIDEO_30S' | 'CAPTION'
 type Platform  = 'instagram' | 'facebook' | 'whatsapp' | 'all'
 type JobStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
+
+const isVideoType = (t: AssetType): boolean =>
+  t === 'VIDEO_8S' || t === 'VIDEO_15S' || t === 'VIDEO_30S'
 
 interface Job {
   id: string
@@ -23,13 +27,15 @@ interface Job {
   generatedAsset?: { id: string; url: string; thumbnailUrl?: string }
 }
 
+// Créditos: fuente de verdad en @brandai/shared (CREDIT_COSTS), no hardcodear.
 const ASSET_TYPES = [
-  { value: 'IMAGE'    as AssetType, label: 'Imagen',    icon: IconPhoto,    credits: 10, desc: 'Foto publicitaria con IA' },
-  { value: 'BANNER'   as AssetType, label: 'Banner',    icon: IconSparkles, credits:  8, desc: 'Banner para redes sociales' },
-  { value: 'CAPTION'  as AssetType, label: 'Caption',   icon: IconFileText, credits:  3, desc: 'Texto persuasivo con IA' },
-  { value: 'VIDEO_15S'as AssetType, label: 'Video 15s', icon: IconVideo,    credits: 20, desc: 'Mini-video animado' },
-  { value: 'VIDEO_30S'as AssetType, label: 'Video 30s', icon: IconVideo,    credits: 35, desc: 'Video publicitario largo' },
-]
+  { value: 'IMAGE'     as AssetType, label: 'Imagen',    icon: IconPhoto,    desc: 'Foto publicitaria con IA' },
+  { value: 'BANNER'    as AssetType, label: 'Banner',    icon: IconSparkles, desc: 'Banner para redes sociales' },
+  { value: 'CAPTION'   as AssetType, label: 'Caption',   icon: IconFileText, desc: 'Texto persuasivo con IA' },
+  { value: 'VIDEO_8S'  as AssetType, label: 'Video 8s',  icon: IconVideo,    desc: 'Mini-video con audio (IA)' },
+  { value: 'VIDEO_15S' as AssetType, label: 'Video 15s', icon: IconVideo,    desc: 'Video con audio — plan Negocio+' },
+  { value: 'VIDEO_30S' as AssetType, label: 'Video 30s', icon: IconVideo,    desc: 'Video largo con audio — plan Negocio+' },
+].map(t => ({ ...t, credits: CREDIT_COSTS[t.value] }))
 
 const PLATFORMS = [
   { value: 'instagram' as Platform, label: 'Instagram' },
@@ -40,22 +46,18 @@ const PLATFORMS = [
 
 const VIDEO_MESSAGES = [
   { at:   0, text: 'Generando el guion y la narración con IA...' },
-  { at:   8, text: 'Iniciando el motor de renderizado...' },
-  { at:  16, text: 'Renderizando los frames con animaciones HTML/CSS...' },
-  { at:  30, text: 'Cada frame se procesa individualmente, como una película.' },
-  { at:  48, text: 'Generando la voz profesional con ElevenLabs...' },
-  { at:  65, text: 'Fusionando video y audio con FFmpeg...' },
+  { at:   8, text: 'Iniciando el motor de generación de video...' },
+  { at:  20, text: 'Creando las escenas con audio incorporado...' },
+  { at:  45, text: 'Renderizando el video, esto toma un momento.' },
   { at:  85, text: 'Subiendo el video a la nube...' },
   { at: 110, text: 'Tomando un poco más de lo habitual, ya casi...' },
   { at: 150, text: '¡Sigue ahí! Terminando los últimos detalles.' },
 ]
 
 const VIDEO_PHASES = [
-  { label: 'Guion con IA',   from:   0, to:  15 },
-  { label: 'Renderizado',    from:  15, to:  65 },
-  { label: 'Voz con IA',     from:  65, to:  85 },
-  { label: 'Mezcla final',   from:  85, to: 110 },
-  { label: 'Subiendo',       from: 110, to: 999 },
+  { label: 'Guion con IA',   from:   0, to:  20 },
+  { label: 'Generando video', from: 20, to:  85 },
+  { label: 'Subiendo',       from:  85, to: 999 },
 ]
 
 function NoCreditsPanel({ balance, required }: { balance: number; required: number }) {
@@ -99,6 +101,10 @@ function GenerateForm() {
   const [discarding,   setDiscarding]   = useState(false)
   const [previewOpen,  setPreviewOpen]  = useState(false)
   const [captionText,  setCaptionText]  = useState<string | null>(null)
+  const [reportOpen,   setReportOpen]   = useState(false)
+  const [reportMsg,    setReportMsg]    = useState('')
+  const [reporting,    setReporting]    = useState(false)
+  const [reported,     setReported]     = useState(false)
   const intervalRef     = useRef<ReturnType<typeof setInterval> | null>(null)
   const [videoMsgIdx,   setVideoMsgIdx]   = useState(0)
   const [elapsedSecs,   setElapsedSecs]   = useState(0)
@@ -133,6 +139,20 @@ function GenerateForm() {
       setDiscarding(false)
       setJob(null)
       setError(null)
+    }
+  }
+
+  async function handleReport(jobId: string) {
+    setReporting(true)
+    try {
+      await api.post('/reports', { jobId, message: reportMsg.trim() || undefined })
+      setReported(true)
+      setReportOpen(false)
+      toast.success('Reporte enviado. ¡Gracias por avisarnos!')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'No se pudo enviar el reporte')
+    } finally {
+      setReporting(false)
     }
   }
 
@@ -178,9 +198,11 @@ function GenerateForm() {
     setPolling(true)
     let attempts   = 0
     // Images/captions: poll every 2s for 60s (30 attempts)
-    // Videos: poll every 4s for 4min (60 attempts) — they take much longer
-    const INTERVAL     = isVideo ? 4000 : 2000
-    const MAX_ATTEMPTS = isVideo ? 60   : 30
+    // Videos: poll every 5s for ~11min (130 attempts) — Sora/Veo tardan minutos.
+    // Debe superar el SORA_TIMEOUT_MS del worker (10 min) para que el worker
+    // resuelva el job a FAILED con un mensaje real antes de que la UI se rinda.
+    const INTERVAL     = isVideo ? 5000 : 2000
+    const MAX_ATTEMPTS = isVideo ? 130  : 30
 
     intervalRef.current = setInterval(async () => {
       attempts++
@@ -195,7 +217,7 @@ function GenerateForm() {
           setJob(prev => prev ? {
             ...prev,
             status: 'FAILED',
-            errorMessage: 'Tiempo de espera agotado. El worker puede estar caído.',
+            errorMessage: 'La generación está tardando más de lo normal. El video puede completarse igual — revísalo en la galería de Assets en unos minutos.',
           } : prev)
         }
       } catch {
@@ -214,6 +236,9 @@ function GenerateForm() {
     setLoading(true)
     setJob(null)
     setError(null)
+    setReported(false)
+    setReportOpen(false)
+    setReportMsg('')
 
     try {
       const created = await api.post<Job>('/generate', {
@@ -222,7 +247,7 @@ function GenerateForm() {
         userPrompt: userPrompt.trim(),
         platform,
       })
-      const isVideo = assetType === 'VIDEO_15S' || assetType === 'VIDEO_30S'
+      const isVideo = isVideoType(assetType)
       setJob(created)
       pollJob(created.id, isVideo)
       if (isVideo) startVideoMessages()
@@ -257,7 +282,7 @@ function GenerateForm() {
       <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
 
         {/* Brand selector */}
-        <div className="card space-y-3">
+        <div data-tour="gen-brand" className="card space-y-3">
           <h2 className="text-sm font-semibold text-[#0A0A0A]">Marca</h2>
           <select
             value={brandId}
@@ -273,7 +298,7 @@ function GenerateForm() {
         </div>
 
         {/* Asset type */}
-        <div className="card space-y-3">
+        <div data-tour="gen-type" className="card space-y-3">
           <h2 className="text-sm font-semibold text-[#0A0A0A]">Tipo de contenido</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {ASSET_TYPES.map(({ value, label, icon: Icon, credits: cost, desc }) => {
@@ -308,7 +333,7 @@ function GenerateForm() {
         </div>
 
         {/* Platform */}
-        <div className="card space-y-3">
+        <div data-tour="gen-platform" className="card space-y-3">
           <h2 className="text-sm font-semibold text-[#0A0A0A]">Plataforma</h2>
           <div className="flex flex-wrap gap-2">
             {PLATFORMS.map(({ value, label }) => (
@@ -326,7 +351,7 @@ function GenerateForm() {
         </div>
 
         {/* Prompt */}
-        <div className="card space-y-3">
+        <div data-tour="gen-prompt" className="card space-y-3">
           <h2 className="text-sm font-semibold text-[#0A0A0A]">Descripción del contenido</h2>
           <textarea
             className="input min-h-[100px] resize-none"
@@ -361,7 +386,7 @@ function GenerateForm() {
 
       {/* Status panel */}
       <div className="space-y-4">
-        <div className="card p-5">
+        <div data-tour="gen-status" className="card p-5">
           <h3 className="text-sm font-semibold text-[#0A0A0A] mb-4">Estado de generación</h3>
 
           {!job && !error && (
@@ -399,7 +424,7 @@ function GenerateForm() {
 
               {/* Panel explicativo para videos en progreso */}
               {(job.status === 'PENDING' || job.status === 'PROCESSING') &&
-               (job.type === 'VIDEO_15S' || job.type === 'VIDEO_30S') && (
+               isVideoType(job.type) && (
                 <div className="space-y-2.5">
 
                   {/* Paso actual animado */}
@@ -420,13 +445,13 @@ function GenerateForm() {
                             : `${Math.floor(elapsedSecs / 60)}m ${elapsedSecs % 60}s transcurridos`}
                         </span>
                         <span className="text-[10px] text-[#A1A1AA]">
-                          {job.type === 'VIDEO_15S' ? 'aprox. 1–3 min' : 'aprox. 2–4 min'}
+                          {job.type === 'VIDEO_8S' ? 'aprox. 1–2 min' : job.type === 'VIDEO_15S' ? 'aprox. 1–3 min' : 'aprox. 2–4 min'}
                         </span>
                       </div>
                       <div className="h-1.5 bg-[#E4E4E7] rounded-full overflow-hidden">
                         <div
                           className="h-full bg-[#09090B] rounded-full transition-all duration-1000 ease-linear"
-                          style={{ width: `${Math.min(elapsedSecs / (job.type === 'VIDEO_15S' ? 200 : 260) * 100, 93)}%` }}
+                          style={{ width: `${Math.min(elapsedSecs / (job.type === 'VIDEO_8S' ? 110 : job.type === 'VIDEO_15S' ? 200 : 260) * 100, 93)}%` }}
                         />
                       </div>
                     </div>
@@ -454,14 +479,66 @@ function GenerateForm() {
                   <div className="flex items-start gap-2 px-3 py-2.5 rounded-[8px] border border-[#E4E4E7] bg-white">
                     <IconInfoCircle size={13} stroke={1.7} className="text-[#A1A1AA] flex-shrink-0 mt-px" />
                     <p className="text-[10px] text-[#71717A] leading-relaxed">
-                      Los videos se renderizan <span className="font-semibold text-[#3F3F46]">frame a frame</span> con animaciones HTML/CSS — como una película digital. Esto garantiza calidad perfecta en cada fotograma.
+                      El video se genera con <span className="font-semibold text-[#3F3F46]">IA y audio incorporado</span> a partir del guion de tu marca. Por eso toma unos minutos: vale la pena la espera.
                     </p>
                   </div>
                 </div>
               )}
 
-              {job.status === 'FAILED' && job.errorMessage && (
-                <p className="text-xs text-[#EF4444]">{job.errorMessage}</p>
+              {job.status === 'FAILED' && (
+                <div className="space-y-2.5">
+                  {job.errorMessage && (
+                    <p className="text-xs text-[#EF4444]">{job.errorMessage}</p>
+                  )}
+
+                  {reported ? (
+                    <div className="flex items-center gap-2 rounded-[8px] bg-[#10B981]/10 px-3 py-2 text-xs font-medium text-[#059669] animate-fade-in">
+                      <IconCircleCheck size={14} stroke={1.8} className="flex-shrink-0" />
+                      Reporte enviado. ¡Gracias por avisarnos!
+                    </div>
+                  ) : reportOpen ? (
+                    <div className="space-y-2 rounded-[8px] border border-[#E4E4E7] bg-white p-3 animate-fade-in">
+                      <label className="block text-[11px] font-medium text-[#3F3F46]">
+                        ¿Qué querías generar? (opcional)
+                      </label>
+                      <textarea
+                        value={reportMsg}
+                        onChange={e => setReportMsg(e.target.value)}
+                        rows={3}
+                        maxLength={500}
+                        placeholder="Contanos qué esperabas o qué salió mal…"
+                        className="input resize-none text-xs"
+                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleReport(job.id)}
+                          disabled={reporting}
+                          className="btn-primary px-3 py-1.5 text-xs"
+                        >
+                          {reporting
+                            ? <><IconLoader2 size={13} className="animate-spin" /> Enviando…</>
+                            : 'Enviar reporte'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReportOpen(false)}
+                          className="btn-ghost px-3 py-1.5 text-xs"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setReportOpen(true)}
+                      className="btn-outline px-3 py-1.5 text-xs"
+                    >
+                      <IconFlag size={13} stroke={1.8} /> Reportar este fallo
+                    </button>
+                  )}
+                </div>
               )}
 
               {job.status === 'COMPLETED' && job.generatedAsset && (
@@ -490,7 +567,7 @@ function GenerateForm() {
                       onClick={() => setPreviewOpen(true)}
                       className="w-full rounded-[10px] overflow-hidden border border-[#E5E7EB] bg-[#F1F3F5] relative group/prev block"
                     >
-                      {job.type === 'VIDEO_15S' || job.type === 'VIDEO_30S' ? (
+                      {isVideoType(job.type) ? (
                         <video
                           src={job.generatedAsset.url}
                           preload="metadata"

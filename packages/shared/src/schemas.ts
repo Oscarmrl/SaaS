@@ -24,13 +24,22 @@ export type UpdateBrandInput = z.infer<typeof UpdateBrandSchema>
 
 export const GenerateAssetSchema = z.object({
   brandId:    z.string().uuid(),
-  type:       z.enum(['IMAGE', 'BANNER', 'VIDEO_15S', 'VIDEO_30S', 'CAPTION']),
+  type:       z.enum(['IMAGE', 'IMAGE_HD', 'BANNER', 'VIDEO_8S', 'VIDEO_15S', 'VIDEO_30S', 'CAPTION']),
   userPrompt: z.string().min(1).max(500),
   platform:   z.enum(['instagram', 'facebook', 'whatsapp', 'all']).optional(),
   metadata:   z.record(z.unknown()).optional(),
 })
 
 export type GenerateAssetInput = z.infer<typeof GenerateAssetSchema>
+
+// ─── Reports ─────────────────────────────────────────────────────────────────
+
+export const CreateReportSchema = z.object({
+  jobId:   z.string().uuid(),
+  message: z.string().trim().max(500).optional(),
+})
+
+export type CreateReportInput = z.infer<typeof CreateReportSchema>
 
 // ─── Credits / Payments ──────────────────────────────────────────────────────
 

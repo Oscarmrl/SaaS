@@ -15,10 +15,12 @@ model User {
   supabaseId String   @unique @map("supabase_id")
   email      String   @unique
   name       String?
-  role       UserRole @default(USER)
-  suspended  Boolean  @default(false)
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  role        UserRole  @default(USER)
+  suspended   Boolean   @default(false)
+  videoTier   VideoTier @default(BASIC)
+  onboardedAt DateTime? @map("onboarded_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
 
   creditAccount      CreditAccount?
   creditTransactions CreditTransaction[]
@@ -26,6 +28,7 @@ model User {
   brands             Brand[]
   generationJobs     GenerationJob[]
   generatedAssets    GeneratedAsset[]
+  generationReports  GenerationReport[]
 
   @@map("users")
 }
@@ -33,6 +36,11 @@ model User {
 enum UserRole {
   USER
   ADMIN
+}
+
+enum VideoTier {
+  BASIC
+  FULL
 }
 
 // ─── Credits ─────────────────────────────────────────────────────────────────
@@ -151,13 +159,16 @@ model GenerationJob {
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   brand          Brand           @relation(fields: [brandId], references: [id], onDelete: Cascade)
   generatedAsset GeneratedAsset?
+  report         GenerationReport?
 
   @@map("generation_jobs")
 }
 
 enum AssetType {
   IMAGE
+  IMAGE_HD
   BANNER
+  VIDEO_8S
   VIDEO_15S
   VIDEO_30S
   CAPTION
@@ -191,4 +202,27 @@ model GeneratedAsset {
   job   GenerationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@map("generated_assets")
+}
+
+// ─── Reports ─────────────────────────────────────────────────────────────────
+
+model GenerationReport {
+  id        String       @id @default(uuid())
+  jobId     String       @unique @map("job_id")
+  userId    String       @map("user_id")
+  message   String?
+  status    ReportStatus @default(OPEN)
+  adminNote String?      @map("admin_note")
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  job  GenerationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("generation_reports")
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
 }

@@ -28,10 +28,14 @@ const listPaymentsSchema = z.object({
   page:   z.coerce.number().int().min(1).optional(),
 })
 
-const listJobsSchema = z.object({
-  status: z.enum(['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED']).optional(),
-  type:   z.enum(['IMAGE', 'BANNER', 'VIDEO_15S', 'VIDEO_30S', 'CAPTION']).optional(),
+const listReportsSchema = z.object({
+  status: z.enum(['OPEN', 'RESOLVED']).optional(),
   page:   z.coerce.number().int().min(1).optional(),
+})
+
+const updateReportSchema = z.object({
+  status:    z.enum(['OPEN', 'RESOLVED']),
+  adminNote: z.string().trim().max(500).optional(),
 })
 
 export async function adminPlugin(server: FastifyInstance): Promise<void> {
@@ -91,11 +95,15 @@ export async function adminPlugin(server: FastifyInstance): Promise<void> {
     return adminService.listPayments({ search, status, page })
   })
 
-  /* ── Jobs ── */
-  server.get('/jobs', async (request) => {
-    const { status, type, page } = listJobsSchema.parse(request.query)
-    return adminService.listJobs({ status, type, page })
+  /* ── Reports ── */
+  server.get('/reports', async (request) => {
+    const { status, page } = listReportsSchema.parse(request.query)
+    return adminService.listReports({ status, page })
   })
 
-  server.get('/jobs/stats', async () => adminService.getJobStats())
+  server.patch('/reports/:id', async (request) => {
+    const { id } = request.params as { id: string }
+    const { status, adminNote } = updateReportSchema.parse(request.body)
+    return adminService.setReportStatus(id, status, adminNote)
+  })
 }

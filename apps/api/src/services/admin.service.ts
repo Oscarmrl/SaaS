@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { JobStatus, AssetType, PaymentStatus, UserRole } from '@prisma/client'
+import type { JobStatus, PaymentStatus, UserRole, ReportStatus } from '@prisma/client'
 import { prisma } from '../lib/prisma'
 import { NotFoundError, ValidationError } from '../lib/errors'
 
@@ -228,43 +228,43 @@ export const adminService = {
     }
   },
 
-  /* ── Generation jobs ────────────────────────────────────── */
-  async listJobs(opts: { status?: JobStatus; type?: AssetType; page?: number }) {
+  /* ── Failed-generation reports ──────────────────────────── */
+  async listReports(opts: { status?: ReportStatus; page?: number }) {
     const page = Math.max(1, opts.page ?? 1)
-    const where = {
-      ...(opts.status ? { status: opts.status } : {}),
-      ...(opts.type ? { type: opts.type } : {}),
-    }
+    const where = opts.status ? { status: opts.status } : {}
 
-    const [jobs, total] = await Promise.all([
-      prisma.generationJob.findMany({
+    const [reports, total, openCount] = await Promise.all([
+      prisma.generationReport.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip:    (page - 1) * PAGE_SIZE,
         take:    PAGE_SIZE,
         select: {
-          id: true, type: true, status: true, userPrompt: true, provider: true,
-          creditsRequired: true, creditsCharged: true, errorMessage: true, createdAt: true,
-          user:  { select: { id: true, email: true } },
-          brand: { select: { id: true, name: true } },
+          id: true, message: true, status: true, adminNote: true, createdAt: true,
+          user: { select: { id: true, email: true } },
+          job: {
+            select: {
+              id: true, type: true, provider: true, userPrompt: true,
+              errorMessage: true, createdAt: true,
+              brand: { select: { id: true, name: true } },
+            },
+          },
         },
       }),
-      prisma.generationJob.count({ where }),
+      prisma.generationReport.count({ where }),
+      prisma.generationReport.count({ where: { status: 'OPEN' } }),
     ])
 
-    return { jobs, total, page, pageSize: PAGE_SIZE, totalPages: Math.ceil(total / PAGE_SIZE) }
+    return { reports, total, openCount, page, pageSize: PAGE_SIZE, totalPages: Math.ceil(total / PAGE_SIZE) }
   },
 
-  async getJobStats() {
-    const [byStatus, byType, byProvider] = await Promise.all([
-      prisma.generationJob.groupBy({ by: ['status'], _count: { _all: true } }),
-      prisma.generationJob.groupBy({ by: ['type'],   _count: { _all: true } }),
-      prisma.generationJob.groupBy({ by: ['provider'], _count: { _all: true } }),
-    ])
-    return {
-      byStatus:   byStatus.map((r) => ({ status: r.status, count: r._count._all })),
-      byType:     byType.map((r) => ({ type: r.type, count: r._count._all })),
-      byProvider: byProvider.map((r) => ({ provider: r.provider, count: r._count._all })),
-    }
+  async setReportStatus(id: string, status: ReportStatus, adminNote?: string) {
+    const report = await prisma.generationReport.findUnique({ where: { id } })
+    if (!report) throw new NotFoundError('Report')
+    return prisma.generationReport.update({
+      where: { id },
+      data:  { status, ...(adminNote !== undefined ? { adminNote } : {}) },
+      select: { id: true, status: true, adminNote: true },
+    })
   },
 }

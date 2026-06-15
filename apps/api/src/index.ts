@@ -9,6 +9,7 @@ import { generatePlugin } from './routes/generate/index'
 import { assetsPlugin } from './routes/assets/index'
 import { userPlugin } from './routes/user/index'
 import { adminPlugin } from './routes/admin/index'
+import { reportsPlugin } from './routes/reports/index'
 import { paypalWebhookRoute } from './routes/webhooks/paypal.route'
 import { AppError } from './lib/errors'
 
@@ -64,6 +65,7 @@ async function start(): Promise<void> {
     await instance.register(brandsPlugin,   { prefix: '/brands' })
     await instance.register(generatePlugin, { prefix: '/generate' })
     await instance.register(assetsPlugin,   { prefix: '/assets' })
+    await instance.register(reportsPlugin,  { prefix: '/reports' })
     await instance.register(adminPlugin,    { prefix: '/admin' })
   })
 
