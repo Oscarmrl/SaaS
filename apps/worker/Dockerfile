@@ -19,29 +19,6 @@ FROM node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Chromium + fonts for Remotion rendering
-RUN apt-get update && apt-get install -y \
-    chromium \
-    fonts-liberation \
-    fonts-noto \
-    libgbm1 \
-    libnss3 \
-    libatk-bridge2.0-0 \
-    libdrm2 \
-    libxkbcommon0 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxrandr2 \
-    libasound2 \
-    --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
-
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV REMOTION_CHROME_EXECUTABLE=/usr/bin/chromium
-# En producción, apuntar al JS compilado de la composición
-ENV REMOTION_ENTRY_POINT=/app/dist/remotion/index.js
-
 COPY --from=builder /app/apps/worker/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 

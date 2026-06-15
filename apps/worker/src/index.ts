@@ -7,7 +7,6 @@ import { processImageJob } from './processors/image.processor'
 import { processBannerJob } from './processors/banner.processor'
 import { processCaptionJob } from './processors/caption.processor'
 import { processVideoJob } from './processors/video.processor'
-import { warmupBundle } from './lib/render-video'
 import type { JobQueuePayload } from '@brandai/shared'
 
 const log = pino({
@@ -39,6 +38,7 @@ const worker = new Worker<JobQueuePayload>(
         return processBannerJob(job)
       case 'CAPTION':
         return processCaptionJob(job)
+      case 'VIDEO_8S':
       case 'VIDEO_15S':
       case 'VIDEO_30S':
         return processVideoJob(job)
@@ -65,10 +65,6 @@ worker.on('error', (err) => {
 })
 
 log.info('BrandAI Worker started — listening for generation jobs')
-
-// Pre-compilar el bundle de Remotion al arrancar para que el primer video
-// no pague el costo de webpack (~30-60s). No bloquea los demás jobs.
-warmupBundle().catch(err => log.warn({ err: err.message }, 'Remotion bundle warmup failed (non-fatal)'))
 
 process.on('SIGTERM', async () => {
   log.info('SIGTERM received, closing worker gracefully')

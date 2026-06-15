@@ -100,6 +100,8 @@ export const paypalWebhookRoute: FastifyPluginAsync = async (instance) => {
       return reply.status(200).send({ received: true })
     }
 
+    const unlockFullVideo = payment.pack !== 'SEED'
+
     await prisma.$transaction([
       prisma.payment.update({
         where: { paypalOrderId },
@@ -121,6 +123,11 @@ export const paypalWebhookRoute: FastifyPluginAsync = async (instance) => {
           paypalOrderId,
         },
       }),
+      // Upgrading video tier is permanent — once unlocked it never downgrades
+      ...(unlockFullVideo ? [prisma.user.update({
+        where: { id: payment.userId },
+        data:  { videoTier: 'FULL' },
+      })] : []),
     ])
 
     request.log.info(`Credits added for user ${payment.userId}: +${payment.creditsPurchased}`)

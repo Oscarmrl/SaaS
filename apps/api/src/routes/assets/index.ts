@@ -60,7 +60,7 @@ export const assetsPlugin: FastifyPluginAsync = async (instance) => {
 
     const r2Base = process.env['R2_PUBLIC_URL'] ?? ''
     const r2Urls = [asset.url, asset.thumbnailUrl].filter(
-      (u): u is string => Boolean(u) && Boolean(r2Base) && u.startsWith(r2Base),
+      (u): u is string => u != null && Boolean(r2Base) && u.startsWith(r2Base),
     )
     await Promise.allSettled(
       r2Urls.map(u => deleteFromR2(u.slice(r2Base.length + 1))),

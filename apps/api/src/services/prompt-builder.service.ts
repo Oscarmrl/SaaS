@@ -66,7 +66,7 @@ Requirements:
 export function buildVideoScriptPrompt(
   brand: BrandProfile,
   userRequest: string,
-  durationSeconds: 15 | 30,
+  durationSeconds: 8 | 15 | 30,
 ): string {
   const wordCount = durationSeconds === 15 ? '35-40 words' : '70-80 words'
   return `
@@ -91,11 +91,14 @@ export function buildPromptForType(
 ): string {
   switch (type) {
     case 'IMAGE':
+    case 'IMAGE_HD':
       return buildImagePrompt(brand, userRequest, options)
     case 'BANNER':
       return buildBannerPrompt(brand, userRequest, options)
     case 'CAPTION':
       return buildCaptionPrompt(brand, userRequest, options)
+    case 'VIDEO_8S':
+      return buildVideoScriptPrompt(brand, userRequest, 8)
     case 'VIDEO_15S':
       return buildVideoScriptPrompt(brand, userRequest, 15)
     case 'VIDEO_30S':

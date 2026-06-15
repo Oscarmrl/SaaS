@@ -1,6 +1,5 @@
 import type { AIImageProvider } from './providers/images/base'
 import type { AITextProvider } from './providers/text/base'
-import type { AIVoiceProvider } from './providers/voice/base'
 import type { AIVideoProvider } from './providers/video/base'
 import type { AssetType } from '@brandai/shared'
 
@@ -11,7 +10,6 @@ import type { AssetType } from '@brandai/shared'
 let _imageProvider: AIImageProvider | null = null
 let _textProvider: AITextProvider | null = null
 let _haikuProvider: AITextProvider | null = null
-let _voiceProvider: AIVoiceProvider | null = null
 let _videoProvider: AIVideoProvider | null = null
 
 export function getImageProvider(): AIImageProvider {
@@ -53,47 +51,31 @@ export function getHaikuProvider(): AITextProvider {
   return _haikuProvider
 }
 
-export function getVoiceProvider(): AIVoiceProvider {
-  if (_voiceProvider) return _voiceProvider
-
-  const name = process.env['VOICE_PROVIDER'] ?? 'elevenlabs'
-  switch (name) {
-    case 'elevenlabs': {
-      const { ElevenLabsProvider } = require('./providers/voice/elevenlabs') as typeof import('./providers/voice/elevenlabs')
-      _voiceProvider = new ElevenLabsProvider()
-      break
-    }
-    default:
-      throw new Error(`Unknown VOICE_PROVIDER: ${name}. Supported: elevenlabs`)
-  }
-  return _voiceProvider
-}
-
 export function getVideoProvider(): AIVideoProvider {
   if (_videoProvider) return _videoProvider
 
-  const name = process.env['VIDEO_PROVIDER'] ?? 'remotion-ffmpeg'
-  switch (name) {
-    case 'remotion-ffmpeg': {
-      const { RemotionFfmpegProvider } = require('./providers/video/remotion-ffmpeg') as typeof import('./providers/video/remotion-ffmpeg')
-      _videoProvider = new RemotionFfmpegProvider()
-      break
-    }
-    default:
-      throw new Error(`Unknown VIDEO_PROVIDER: ${name}. Supported: remotion-ffmpeg`)
-  }
-  return _videoProvider
+  const name = process.env['VIDEO_PROVIDER'] ?? 'sora-2'
+
+  // NOTA: la generación de video corre en el WORKER (apps/worker), no aquí.
+  // El worker llama a Sora 2 directamente vía `lib/generate-video.ts` (provider
+  // de pruebas) por la misma razón que el script de Opus: es un proceso async de
+  // larga duración fuera del ciclo request/response del API. Este factory queda
+  // para cuando Veo 3 Fast se exponga también desde el API.
+  // TODO: implementar Veo 3 Fast como AIVideoProvider y enrutarlo aquí.
+  throw new Error(`Video provider not wired in API factory: ${name}. Video runs in the worker (Sora 2 / pending Veo 3 Fast).`)
 }
 
 export function getProviderNameForAsset(type: AssetType): string {
   switch (type) {
     case 'IMAGE':
+    case 'IMAGE_HD':
     case 'BANNER':
       return process.env['IMAGE_PROVIDER'] ?? 'flux-pro'
     case 'CAPTION':
       return process.env['TEXT_PROVIDER'] ?? 'claude-sonnet'
+    case 'VIDEO_8S':
     case 'VIDEO_15S':
     case 'VIDEO_30S':
-      return process.env['VIDEO_PROVIDER'] ?? 'remotion-ffmpeg'
+      return process.env['VIDEO_PROVIDER'] ?? 'veo3-fast'
   }
 }

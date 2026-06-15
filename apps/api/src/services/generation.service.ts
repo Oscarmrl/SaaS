@@ -32,14 +32,19 @@ export async function generateAsset(params: GenerateParams): Promise<GenerationJ
 
   const creditsRequired = CREDIT_COSTS[type]
 
-  // 1. Check credits + load brand in parallel
-  const [account, brand] = await Promise.all([
+  // 1. Check credits + load brand + check video tier in parallel
+  const [account, brand, user] = await Promise.all([
     prisma.creditAccount.findUnique({ where: { userId } }),
     prisma.brand.findFirst({ where: { id: brandId, userId } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { videoTier: true } }),
   ])
 
   if (!account || account.balance < creditsRequired) throw new InsufficientCreditsError()
   if (!brand) throw new NotFoundError('Brand')
+
+  if ((type === 'VIDEO_15S' || type === 'VIDEO_30S') && user?.videoTier !== 'FULL') {
+    throw new AppError('VIDEO_TIER_LOCKED', 'Tu plan solo permite videos de 8s. Adquiere un plan Negocio o superior para generar videos más largos.', 403)
+  }
 
   // 3. Build enriched prompt
   const brandProfile = {

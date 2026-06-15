@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { IconX, IconDownload, IconTrash, IconLoader2 } from '@tabler/icons-react'
 
-type AssetType = 'IMAGE' | 'BANNER' | 'VIDEO_15S' | 'VIDEO_30S' | 'CAPTION'
+type AssetType = 'IMAGE' | 'BANNER' | 'VIDEO_8S' | 'VIDEO_15S' | 'VIDEO_30S' | 'CAPTION'
 
 interface Props {
   url:              string
@@ -22,7 +22,7 @@ export function AssetPreviewModal({
   onClose, onDownload, onDestructive, destructiveLabel, destructiveLoading,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const isVideo  = type === 'VIDEO_15S' || type === 'VIDEO_30S'
+  const isVideo  = type === 'VIDEO_8S' || type === 'VIDEO_15S' || type === 'VIDEO_30S'
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -37,7 +37,7 @@ export function AssetPreviewModal({
 
   const typeLabel: Record<AssetType, string> = {
     IMAGE: 'Imagen', BANNER: 'Banner',
-    VIDEO_15S: 'Video 15s', VIDEO_30S: 'Video 30s', CAPTION: 'Caption',
+    VIDEO_8S: 'Video 8s', VIDEO_15S: 'Video 15s', VIDEO_30S: 'Video 30s', CAPTION: 'Caption',
   }
 
   return (

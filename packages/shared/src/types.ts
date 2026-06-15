@@ -1,7 +1,8 @@
 // ─── Asset & Job enums ───────────────────────────────────────────────────────
 
-export type AssetType = 'IMAGE' | 'BANNER' | 'VIDEO_15S' | 'VIDEO_30S' | 'CAPTION'
+export type AssetType = 'IMAGE' | 'IMAGE_HD' | 'BANNER' | 'VIDEO_8S' | 'VIDEO_15S' | 'VIDEO_30S' | 'CAPTION'
 export type JobStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
+export type VideoTier = 'BASIC' | 'FULL'
 export type TransactionType = 'PURCHASE' | 'SPEND' | 'REFUND' | 'BONUS'
 export type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED'
 export type CreditPack = 'SEED' | 'BUSINESS' | 'PRO' | 'AGENCY'
@@ -34,17 +35,9 @@ export interface TextGenerationParams {
   temperature?: number
 }
 
-export interface VoiceGenerationParams {
-  text: string
-  voiceId?: string
-  stability?: number
-  similarityBoost?: number
-}
-
 export interface VideoGenerationParams {
   script: string
-  audioBuffer?: Buffer
-  duration: 15 | 30
+  duration: 8 | 15 | 30
   brand: {
     primaryColor: string
     secondaryColor: string
