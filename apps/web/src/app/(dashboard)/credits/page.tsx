@@ -14,10 +14,10 @@ interface TransactionPage { data: Transaction[]; total: number; page: number; pa
 type Pack = 'SEED' | 'BUSINESS' | 'PRO' | 'AGENCY'
 
 const PACK_DETAILS: Record<Pack, { label: string; popular?: boolean; features: string[] }> = {
-  SEED:     { label: 'Seed',     features: ['80 créditos',   '8 imágenes',  '26 banners',  '26 captions'] },
-  BUSINESS: { label: 'Business', popular: true, features: ['220 créditos', '22 imágenes', '27 banners',  '73 captions'] },
-  PRO:      { label: 'Pro',      features: ['500 créditos',  '50 imágenes', '62 banners',  '166 captions'] },
-  AGENCY:   { label: 'Agency',   features: ['1300 créditos', '130 imágenes','162 banners', '433 captions'] },
+  SEED:     { label: 'Semilla',  features: ['100 créditos',  '20 imágenes',  '25 banners',  '50 captions'] },
+  BUSINESS: { label: 'Negocio',  popular: true, features: ['250 créditos', '50 imágenes',  '62 banners',  '125 captions'] },
+  PRO:      { label: 'Pro',      features: ['600 créditos',  '120 imágenes', '150 banners', '300 captions'] },
+  AGENCY:   { label: 'Agencia',  features: ['1600 créditos', '320 imágenes', '400 banners', '800 captions'] },
 }
 
 export default function CreditsPage() {
@@ -51,7 +51,7 @@ export default function CreditsPage() {
       </div>
 
       {/* Balance */}
-      <div className="card mb-7 p-6 flex items-center justify-between gap-4">
+      <div data-tour="credits-balance" className="card mb-7 p-6 flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="section-label mb-2">Créditos disponibles</p>
           {loadingAcct
@@ -67,7 +67,7 @@ export default function CreditsPage() {
 
       {/* Packs */}
       <p className="text-xs font-semibold text-[#3F3F46] uppercase tracking-wide mb-4">Packs de créditos</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+      <div data-tour="credits-packs" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
         {(Object.entries(CREDIT_PACKS) as [Pack, { credits: number; priceUsd: number }][]).map(([pack, { credits, priceUsd }]) => {
           const detail   = PACK_DETAILS[pack]
           const isBuying = buying === pack
@@ -111,7 +111,7 @@ export default function CreditsPage() {
       </div>
 
       {/* History */}
-      <div className="card">
+      <div data-tour="credits-history" className="card">
         <p className="text-xs font-semibold text-[#3F3F46] uppercase tracking-wide mb-5">Historial</p>
 
         {transactions.length === 0 ? (

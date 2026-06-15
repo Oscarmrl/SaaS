@@ -14,9 +14,26 @@ export const userPlugin: FastifyPluginAsync = async (instance) => {
   instance.get('/me', async (request, reply) => {
     const user = await prisma.user.findUnique({
       where:  { id: request.user.id },
-      select: { id: true, email: true, name: true, role: true, createdAt: true },
+      select: { id: true, email: true, name: true, role: true, onboardedAt: true, createdAt: true },
     })
     return reply.send(user)
+  })
+
+  // POST /user/tour-complete — marca un tour de onboarding como visto.
+  // Se guarda en user_metadata.completed_tours (Supabase): por-cuenta y cross-device,
+  // sin necesidad de columnas extra en la DB.
+  instance.post('/tour-complete', async (request, reply) => {
+    const { key } = z.object({ key: z.string().min(1).max(50) }).parse(request.body)
+
+    const { data } = await supabaseAdmin.auth.admin.getUserById(request.user.supabaseId)
+    const current = (data.user?.user_metadata?.['completed_tours'] as string[] | undefined) ?? []
+
+    if (!current.includes(key)) {
+      await supabaseAdmin.auth.admin.updateUserById(request.user.supabaseId, {
+        user_metadata: { completed_tours: [...current, key] },
+      })
+    }
+    return reply.send({ ok: true })
   })
 
   // PATCH /user — update display name in Prisma + Supabase metadata

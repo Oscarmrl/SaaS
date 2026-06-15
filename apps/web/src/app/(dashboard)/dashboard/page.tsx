@@ -39,7 +39,7 @@ export default function DashboardPage() {
           <h1 className="page-title">Bienvenido, {firstName}</h1>
           <p className="page-subtitle">¿Qué vas a crear hoy?</p>
         </div>
-        <Link href="/brands/new" className="btn-primary">
+        <Link href="/brands/new" data-tour="new-brand" className="btn-primary">
           <IconPlus size={15} stroke={2} />
           Nueva marca
         </Link>
@@ -52,7 +52,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 space-y-5">
 
           {/* Quick actions */}
-          <div className="card">
+          <div data-tour="quick-actions" className="card">
             <p className="text-xs font-semibold text-[#3F3F46] mb-4 uppercase tracking-wide">Generar contenido</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {QUICK_ACTIONS.map(({ type, icon: Icon, label, credits: cost, desc }) => (

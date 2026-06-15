@@ -3,12 +3,16 @@
 import { useState } from 'react'
 import { IconSparkles, IconMenu2 } from '@tabler/icons-react'
 import { Sidebar } from './Sidebar'
+import { OnboardingTour } from './OnboardingTour'
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
+
+      {/* Onboarding tour (client-only, renders its own portal) */}
+      <OnboardingTour />
 
       {/* Mobile backdrop */}
       {sidebarOpen && (

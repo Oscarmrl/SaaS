@@ -250,7 +250,7 @@ export function SmartBrandForm() {
           <h1 className="text-2xl font-bold text-[#0A0A0A]">¿Cuál es tu tipo de negocio?</h1>
           <p className="text-[#6B7280] text-sm mt-2">Adaptaré las preguntas a tu industria</p>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div data-tour="brand-industry" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {INDUSTRIES.map(({ value, label, Icon }) => (
             <button
               key={value}

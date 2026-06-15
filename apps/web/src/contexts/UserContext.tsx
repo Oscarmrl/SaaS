@@ -19,6 +19,8 @@ interface UserContextValue {
   loadingCredits: boolean
   refreshCredits: () => Promise<void>
   isAdmin: boolean
+  hasSeenTour: (key: string) => boolean
+  markTourSeen: (key: string) => Promise<void>
 }
 
 const UserContext = createContext<UserContextValue>({
@@ -30,6 +32,8 @@ const UserContext = createContext<UserContextValue>({
   loadingCredits: true,
   refreshCredits: async () => {},
   isAdmin: false,
+  hasSeenTour: () => true,
+  markTourSeen: async () => {},
 })
 
 export function useUser() {
@@ -41,6 +45,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [credits, setCredits]         = useState<CreditAccount>({ balance: 0, lifetimeCredits: 0 })
   const [loadingCredits, setLoading]  = useState(true)
   const [role, setRole]               = useState<string | null>(null)
+  const [onboarded, setOnboarded]     = useState<boolean | null>(null)
+  const [completedTours, setCompletedTours] = useState<string[]>([])
 
   const supabase = createClient()
 
@@ -71,11 +77,28 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, [user, refreshCredits])
 
   useEffect(() => {
-    if (!user) { setRole(null); return }
-    api.get<{ role: string }>('/user/me')
-      .then((data) => setRole(data.role))
-      .catch(() => setRole(null))
+    if (!user) { setRole(null); setOnboarded(null); setCompletedTours([]); return }
+    setCompletedTours((user.user_metadata?.['completed_tours'] as string[] | undefined) ?? [])
+    api.get<{ role: string; onboardedAt: string | null }>('/user/me')
+      .then((data) => { setRole(data.role); setOnboarded(!!data.onboardedAt) })
+      .catch(() => { setRole(null); setOnboarded(null) })
   }, [user])
+
+  const hasSeenTour = useCallback((key: string) => {
+    if (completedTours.includes(key)) return true
+    if (key === 'dashboard' && onboarded) return true // compat con onboardedAt previo
+    return false
+  }, [completedTours, onboarded])
+
+  const markTourSeen = useCallback(async (key: string) => {
+    setCompletedTours(prev => (prev.includes(key) ? prev : [...prev, key])) // optimista
+    if (key === 'dashboard') setOnboarded(true)
+    try {
+      await api.post('/user/tour-complete', { key })
+    } catch {
+      // el flag local ya evita repetir en esta sesión
+    }
+  }, [])
 
   // Compatibilidad: email/password guarda full_name, Google guarda name o full_name
   const meta        = user?.user_metadata ?? {}
@@ -84,7 +107,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const avatarUrl   = (meta.avatar_url as string | undefined) ?? null
 
   return (
-    <UserContext.Provider value={{ user, displayName, firstName, avatarUrl, credits, loadingCredits, refreshCredits, isAdmin: role === 'ADMIN' }}>
+    <UserContext.Provider value={{ user, displayName, firstName, avatarUrl, credits, loadingCredits, refreshCredits, isAdmin: role === 'ADMIN', hasSeenTour, markTourSeen }}>
       {children}
     </UserContext.Provider>
   )
